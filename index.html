@@ -1,0 +1,1308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1828">
+<meta name="description" content="Track RCMP overtime, callbacks, court and OA on-call, and confirm each against your pay stub.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Overtime Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: phone-first single column — totals band, add form, then a month-by-month ledger with check-off boxes. */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --ink:#1b2430; --muted:#5d6b7a; --line:#d5dbe2;
+  --accent:#e0601b; --accent-ink:#ffffff; --accent-soft:#fbe6da;
+  --ok:#2f7d4f; --ok-soft:#dcefe3; --bad:#b02a4a; --oc:#1f6fd1; --oc-ink:#ffffff; --otc:#c62828; --work:#2e8b57; --work-soft:#dff2e6; --work-ink:#ffffff;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --surface:#1b222b; --ink:#e7ecf1; --muted:#97a4b2; --line:#2e3844;
+  --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2418;
+  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --surface:#1b222b; --ink:#e7ecf1; --muted:#97a4b2; --line:#2e3844;
+  --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2418;
+  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45}
+.wrap{max-width:600px;margin:0 auto;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+h1,h2{font-family:var(--f-display);font-weight:700;margin:0;text-transform:uppercase;text-wrap:balance}
+h1{font-size:1.9rem;line-height:1;letter-spacing:.02em}
+h2{font-size:1.1rem;letter-spacing:.08em}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.top{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+.status{font-size:.8rem;color:var(--muted)}
+.sub{font-size:.9rem;color:var(--muted)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;min-height:40px}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,label.chk:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.btn-primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.totals{display:grid;grid-template-columns:1fr 1fr}
+.totals>div{padding:14px 16px;min-width:0}
+.totals>div+div{border-left:1px solid var(--line)}
+.totals>.lto{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 12px;padding:10px 16px}
+.ltobar{flex-basis:100%;height:8px;border-radius:4px;background:var(--bg);overflow:hidden}
+.ltobar span{display:block;height:100%;background:var(--ok);width:0}
+.ltobar span.full{background:var(--bad)}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.field .seg label{flex:1;position:relative;text-align:center;padding:10px 6px;font-weight:600;cursor:pointer;min-height:44px;font-size:.9rem;text-transform:none;letter-spacing:0;color:var(--ink)}
+.field .seg label+label{border-left:1px solid var(--line)}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg label:has(input:checked){background:var(--ink);color:var(--surface)}
+.seg label:focus-within{outline:2px solid var(--accent);outline-offset:-2px}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;padding:0 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted);margin-left:4px;vertical-align:1px}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.big{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:1.5rem;font-weight:600;line-height:1.2}
+.big.wait{color:var(--accent)} .big.done{color:var(--ok)}
+.small{font-size:.85rem;color:var(--muted)}
+.sectionhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:14px 16px 0;flex-wrap:wrap}
+form.add{padding:12px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field.full{grid-column:1/-1}
+.field label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.field input,.field select{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-width:0}
+.preview{grid-column:1/-1;font-size:.9rem;color:var(--muted);margin:0}
+.preview b{color:var(--ink);font-family:var(--f-mono)}
+.actions{grid-column:1/-1;display:flex;gap:8px}
+.actions .btn-primary{flex:1}
+.formerr{grid-column:1/-1;color:var(--bad);font-size:.9rem;margin:0}
+.tabs{display:flex;gap:6px;padding:12px 16px 0;flex-wrap:wrap}
+.tabs button{border-radius:999px;padding:6px 14px;min-height:36px;font-weight:600;font-size:.9rem}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.pnav{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px 8px}
+.pnav button{min-height:36px;padding:4px 12px;font-weight:600}
+.pnav button:disabled{opacity:.4;cursor:default}
+.periods{display:grid;grid-auto-flow:column;grid-auto-columns:100%;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:thin;border-top:1px solid var(--line)}
+.periods:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.periods.flat{display:flex;flex-direction:column;overflow:visible}
+.wsec+.wsec{border-top:6px solid var(--bg)}
+.wsec .ptitle{display:flex;align-items:center;gap:8px}
+.wsec .ptitle::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--otc)}
+.wsec.woc .ptitle::before{background:var(--oc)}
+.wsec.wfut .ptitle::before{background:var(--line)}
+.phead.subhead{border-top:1px solid var(--line);margin-top:4px;padding-top:12px}
+.pcard{scroll-snap-align:start;min-width:0;padding-bottom:8px}
+.phead{padding:12px 16px 6px;display:flex;flex-direction:column;gap:2px}
+.ptitle{font-family:var(--f-display);font-weight:700;font-size:1.25rem;text-transform:uppercase;letter-spacing:.04em}
+.tag.cur{border-color:var(--accent);color:var(--accent);vertical-align:3px}
+.psum{font-size:.8rem;color:var(--muted)}
+.e-note{grid-column:2/-1;margin-top:-4px;padding:6px 10px;border-left:3px solid var(--line);background:var(--bg);border-radius:0 6px 6px 0;font-size:.88rem;white-space:pre-wrap;overflow-wrap:anywhere}
+textarea{font:inherit;color:inherit;resize:vertical}
+.field textarea{width:100%;min-height:80px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.month{padding:12px 16px 4px;display:flex;flex-direction:column;gap:2px;font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700;border-top:1px solid var(--line);margin-top:8px}
+.month:first-child{border-top:0;margin-top:0}
+ul.list{list-style:none;margin:0;padding:0 0 8px}
+li.entry{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 12px;align-items:start;padding:10px 16px}
+li.entry+li.entry{border-top:1px dashed var(--line)}
+label.chk{position:relative;width:32px;height:32px;display:block;border-radius:8px}
+label.chk input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+label.chk span{display:grid;place-items:center;width:32px;height:32px;border:2px solid var(--muted);border-radius:8px;background:var(--surface)}
+label.chk input:checked+span{background:var(--ok);border-color:var(--ok)}
+label.chk input:checked+span::after{content:"";width:9px;height:16px;border:solid var(--surface);border-width:0 3px 3px 0;transform:translateY(-2px) rotate(45deg)}
+.e-main{min-width:0}
+.e-top{font-weight:700}
+.e-meta{font-size:.85rem;color:var(--muted);overflow-wrap:anywhere}
+.e-meta .okt{color:var(--ok);font-weight:600}
+.e-meta .diff{color:var(--bad);font-weight:600}
+.e-right{text-align:right;display:flex;flex-direction:column;align-items:end;gap:4px}
+.e-amt{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
+.e-btns{display:flex;gap:4px}
+.e-btns button{min-height:30px;padding:2px 8px;font-size:.8rem}
+.danger{color:var(--bad)}
+li.done .e-top{color:var(--muted)}
+.empty{padding:24px 16px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);font-size:1.05rem;margin-bottom:4px}
+details.settings>summary{cursor:pointer;padding:14px 16px;font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:1.05rem}
+.setgrid{padding:0 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hint{font-size:.85rem;color:var(--muted);margin:0;grid-column:1/-1}
+.cal{border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--bg)}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.calhead strong{font-family:var(--f-display);font-size:1.2rem;text-transform:uppercase;letter-spacing:.06em}
+.calhead button{min-height:36px;padding:4px 12px}
+.calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.calgrid .dow{text-align:center;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:2px 0}
+.day{position:relative;min-height:54px;padding:4px 2px;border:1px solid transparent;border-radius:8px;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;font-variant-numeric:tabular-nums}
+.day.blank{background:transparent;border:0;cursor:default}
+.day.rto{background:var(--accent-soft)}
+.day .dn{font-weight:700;font-size:.95rem;line-height:1.2}
+.day .rt{font-size:.62rem;font-weight:700;color:var(--accent);line-height:1}
+.day.tow .rt{color:var(--muted)}
+.day .eh{font-family:var(--f-mono);font-size:.62rem;font-weight:600;line-height:1.1;padding:0 4px;border-radius:4px;background:var(--accent);color:var(--accent-ink)}
+.day .eh.ok{background:var(--ok);color:var(--surface)}
+.day.pstart::before{content:"";position:absolute;left:4px;right:4px;top:-1px;height:3px;border-radius:2px;background:var(--ink)}
+.day{overflow:hidden}
+.day>span{position:relative;z-index:1}
+.day .shiftband{position:absolute;top:0;bottom:0;background:var(--work);z-index:0;pointer-events:none}
+.day.work .dn,.day.oc .dn,.day.otd .dn{background:var(--surface);color:var(--ink);border-radius:4px;padding:0 4px;line-height:1.25}
+.day .gauge.ot{background:var(--otc);z-index:0}
+.day.otd .eh{background:var(--surface);color:var(--otc)}
+.day .gauge{position:absolute;top:0;bottom:0;width:0;background:var(--oc);z-index:0;pointer-events:none}
+
+.day.oc .rt{background:var(--surface);border-radius:3px;padding:1px 3px}
+.day.oc .eh{background:var(--oc-ink);color:var(--oc)}
+.day.oc .eh.ok{background:var(--ok);color:var(--oc-ink)}
+.ocbox{grid-column:1/-1;display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:10px;border:1px solid var(--oc)}
+.ocbox .seg label{flex:1;position:relative;text-align:center;padding:10px 6px;font-weight:600;cursor:pointer;min-height:44px;font-size:.9rem;color:var(--ink)}
+.ocbox .seg label+label{border-left:1px solid var(--line)}
+.tag.ocl{border-color:var(--oc);color:var(--oc)}
+.day.today .dn{text-decoration:underline;text-underline-offset:3px}
+.day.sel{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.callegend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.78rem;color:var(--muted);margin-top:6px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.ratebox{grid-column:1/-1;display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:10px;border:1px solid var(--line)}
+.ratebox .rv{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ratebox .rv b{font-family:var(--f-mono);font-size:1.4rem;color:var(--accent)}
+.ratebox .rv span{font-size:.9rem;color:var(--muted)}
+.ckline{display:flex;gap:10px;align-items:center;font-size:.9rem;cursor:pointer}
+.ckline input{width:22px;height:22px;accent-color:var(--accent);margin:0}
+.sched{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.sched button{min-height:52px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.8rem;font-weight:700}
+.sched button small{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.sched button.k-work small{color:var(--muted)}
+.sched button.k-tow small{color:var(--ink)}
+.sched button.k-rto{background:var(--accent-soft)} .sched button.k-rto small{color:var(--accent)}
+.calwrap{padding:12px 16px 0}
+.calfoot{padding:12px 16px 16px;display:flex}
+.calfoot button{flex:1}
+dialog.sheet{border:0;padding:0;width:min(600px,100%);max-width:100%;max-height:92vh;max-height:92dvh;margin:auto auto 0;border-radius:16px 16px 0 0;background:var(--surface);color:var(--ink);overflow:auto;overscroll-behavior:contain;padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (min-width:640px){dialog.sheet{margin:auto;border-radius:16px}}
+dialog.sheet::backdrop{background:rgba(10,14,20,.5)}
+.sheethead{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:start;gap:12px;padding:14px 16px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+.sheethead h2{font-size:1.3rem}
+.sheetdate{font-weight:700;font-size:1rem;color:var(--accent)}
+#sheetClose,#confClose{min-width:44px;min-height:44px;font-size:1.1rem;border-radius:50%}
+.dayhas{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:10px;background:var(--bg)}
+.dcard{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:8px;background:var(--surface);border-left:4px solid var(--otc)}
+.dcard.isoc{border-left-color:var(--oc)}
+.dtop{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.dtime{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:.95rem}
+.dcard .e-note{margin-top:4px}
+.dbtns{display:flex;gap:8px;margin-top:6px}
+.dbtns button{min-height:36px;padding:4px 12px;font-size:.88rem}
+.addmore{grid-column:1/-1}
+form.add.viewmode>*:not(#dayHas):not(#addMore):not(#fDate){display:none!important}
+.taxset{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:10px}
+.setgrid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field label.ckline{text-transform:none;letter-spacing:0;font-size:.95rem;font-weight:400;color:var(--ink)}
+.repeat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.repeat .hint{grid-column:1/-1}
+.linkish{grid-column:1/-1;border:0;background:none;text-decoration:underline;text-underline-offset:3px;justify-self:start;padding:4px 0}
+.netl{font-size:.8rem;color:var(--muted);font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.netp{display:block;margin-top:4px;color:var(--ink);font-weight:600}
+.addnote{grid-column:2/-1;justify-self:start;border:1px dashed var(--line);background:none;color:var(--muted);font-size:.85rem;min-height:32px;padding:2px 10px;margin-top:-4px}
+.taxbox{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:10px;background:var(--bg)}
+.taxt{width:100%;border-collapse:collapse;font-size:.95rem}
+.taxt td{padding:4px 0;border-bottom:1px dashed var(--line)}
+.taxt td.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.taxt tr.tot td{border-bottom:0;border-top:2px solid var(--ink);font-weight:700;padding-top:6px}
+li.entry.tap{cursor:pointer}
+li.entry.tap:hover{background:var(--bg)}
+li.entry.tap:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.netd{color:var(--ink)}
+.confdlg{width:min(480px,100%)}
+.confbody{padding:14px 16px 18px;display:flex;flex-direction:column;gap:12px}
+.confgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.verchip{font-family:var(--f-mono);font-size:.7rem;font-weight:600;letter-spacing:0;text-transform:none;vertical-align:middle;padding:2px 8px;min-height:0;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.updbanner{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:10px;background:var(--accent-soft);color:var(--ink);font-size:.9rem}
+.updbanner span{flex:1;min-width:0}
+.updbanner button{min-height:34px;padding:4px 10px;font-size:.85rem}
+.about{padding:0 16px 16px;display:flex;flex-direction:column;gap:14px}
+.rel{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:8px;background:var(--bg)}
+.rel .rh{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.rel .rv{font-family:var(--f-mono);font-weight:700}
+.rel ul,.verrules ul{margin:0;padding-left:18px;font-size:.9rem;display:flex;flex-direction:column;gap:4px}
+.kind{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.kind.major{border-color:var(--bad);color:var(--bad)} .kind.minor{border-color:var(--oc);color:var(--oc)}
+.verrules{display:flex;flex-direction:column;gap:6px}
+#changelog{display:flex;flex-direction:column;gap:8px}
+.totals>.wsplit{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px;padding:10px 16px}
+.wrow{display:flex;justify-content:space-between;gap:8px;font-size:.88rem;color:var(--ink);flex-wrap:wrap}
+.wrow .num{font-variant-numeric:tabular-nums}
+.wrow span:first-child{display:flex;align-items:center;gap:5px}
+.wrow span:first-child::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--otc)}
+.wrow.oc span:first-child::before{background:var(--oc)}
+.confirmbox{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;border-radius:10px;background:var(--ok-soft)}
+.ocmath{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.mathbox{grid-column:2/-1;margin-top:-2px;padding:6px 10px;border-left:3px solid var(--otc);border-radius:0 6px 6px 0;background:var(--bg);font-size:.88rem;display:flex;flex-direction:column;gap:2px}
+.mathbox.isoc{border-left-color:var(--oc)}
+.dcard .mathbox{margin-top:2px;background:var(--bg)}
+.dtpair{display:grid;grid-template-columns:1.25fr 1fr;gap:8px}
+.ocbox .field>.label{font-size:.72rem}
+/* ===== v2.4.0 visual refresh: navy duty-board header, gold highlights, softer cards ===== */
+:root{
+  --bg:#edf0f4; --line:#dde3ea; --accent:#9a6700; --accent-ink:#ffffff; --accent-soft:#fbf1da; --gold:#f2b84b;
+  --otc:#c8202f; --oc:#1f6fd1;
+  --hero:#0d1828; --hero-2:#1a3352; --hero-ink:#eef3fa; --hero-muted:#a3b3c8; --hero-line:rgba(255,255,255,.13);
+  --shadow:0 1px 2px rgba(16,28,45,.06),0 12px 32px -14px rgba(16,28,45,.22);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141b; --surface:#171e27; --line:#29333f; --accent:#f2b84b; --accent-ink:#1b1200; --accent-soft:#33280f;
+  --otc:#ef4b56; --oc:#4c8fe6; --hero:#0a121d; --hero-2:#16304f;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 32px -14px rgba(0,0,0,.7); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --surface:#171e27; --line:#29333f; --accent:#f2b84b; --accent-ink:#1b1200; --accent-soft:#33280f;
+  --otc:#ef4b56; --oc:#4c8fe6; --hero:#0a121d; --hero-2:#16304f;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 32px -14px rgba(0,0,0,.7); color-scheme:dark}
+.wrap{gap:18px}
+.card{border:0;border-radius:18px;box-shadow:var(--shadow)}
+button{border-radius:10px;transition:background-color .15s,border-color .15s,box-shadow .15s}
+.btn-primary{box-shadow:0 8px 18px -10px var(--accent)}
+.btn-primary:hover{filter:brightness(1.06)}
+/* hero */
+.hero{position:relative;overflow:hidden;border-radius:24px;padding:22px 18px 18px;display:flex;flex-direction:column;gap:18px;
+  background:radial-gradient(130% 120% at 100% 0%,var(--hero-2) 0%,var(--hero) 62%);color:var(--hero-ink);box-shadow:var(--shadow)}
+.hero::before{content:"";position:absolute;left:18px;top:0;width:56px;height:4px;border-radius:0 0 4px 4px;background:var(--gold)}
+.hero h1{font-size:2.3rem;letter-spacing:.03em;color:var(--hero-ink)}
+.hero .sub,.hero .status{color:var(--hero-muted)}
+.hero .verchip{background:rgba(255,255,255,.08);border-color:var(--hero-line);color:var(--hero-muted)}
+.hero .card.totals{background:rgba(255,255,255,.045);box-shadow:none;border:1px solid var(--hero-line);border-radius:16px;backdrop-filter:blur(2px)}
+.hero .totals>div+div,.hero .totals>.lto,.hero .totals>.wsplit{border-color:var(--hero-line)}
+.hero .label{color:var(--hero-muted)}
+.hero .big{font-size:clamp(1rem,4.7vw,1.9rem);white-space:nowrap}
+.hero .big.wait{color:var(--gold)} .hero .big.done{color:#72d9a0}
+.hero .small,.hero .netl{color:var(--hero-muted)}
+.hero .wrow,.hero .num{color:var(--hero-ink)}
+.bank{display:flex;flex-direction:column;gap:6px;align-items:stretch!important;flex-wrap:nowrap!important}
+.bhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.bval{font-size:.98rem;font-weight:600;white-space:nowrap}
+.pbar{position:relative;height:22px;border-radius:11px;background:rgba(255,255,255,.1);overflow:hidden;display:flex}
+.pbar .seg{height:100%;border-radius:0!important;flex:none}
+.pbar .seg.start{background:#2f9963}
+.pbar .seg.earn{background:#72d9a0}
+.pbar.full .seg.start{background:#c2414c} .pbar.full .seg.earn{background:#ff7a85}
+.pbar .tick{position:absolute;top:5px;bottom:5px;width:1px;background:rgba(255,255,255,.28)}
+.pbar .ptext{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-family:var(--f-mono);font-size:.78rem;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.bfoot{font-size:.78rem;color:var(--hero-muted)}
+.hero .ltobar{height:6px;background:rgba(255,255,255,.1)}
+.hero .ltobar span{background:linear-gradient(90deg,#72d9a0,#36b276);border-radius:3px}
+.hero .ltobar span.full{background:linear-gradient(90deg,#ff7a85,#e0414e)}
+.updbanner{border-radius:14px;box-shadow:var(--shadow)}
+/* section headings */
+.sectionhead h2,.phead .ptitle{letter-spacing:.06em}
+/* segmented tabs */
+.tabs{margin:12px 16px 0;padding:4px;gap:4px;background:var(--bg);border-radius:12px;width:fit-content;max-width:calc(100% - 32px)}
+.tabs button{border:0;background:transparent;min-height:34px;color:var(--muted)}
+.tabs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);border-color:transparent;box-shadow:0 1px 3px rgba(16,28,45,.18)}
+/* calendar */
+.cal{background:transparent;border:0;padding:0}
+.calhead strong{font-size:1.4rem}
+.calhead button{border-radius:50%;width:40px;min-height:40px;padding:0}
+.calgrid{gap:5px}
+.day{border-radius:11px;min-height:58px;border:0;box-shadow:inset 0 0 0 1px var(--line)}
+.day.blank{box-shadow:none}
+.day:hover{box-shadow:inset 0 0 0 1px var(--muted)}
+.day.sel{box-shadow:0 0 0 2px var(--accent),0 6px 14px -8px var(--accent)}
+.day.today .dn{text-decoration:none;box-shadow:inset 0 -2px 0 var(--accent)}
+/* lists */
+li.entry{padding:12px 16px}
+label.chk span{border-radius:10px}
+.pnav button{border-radius:999px}
+/* sheets */
+dialog.sheet{border-radius:24px 24px 0 0;box-shadow:0 -10px 40px -10px rgba(0,0,0,.35)}
+@media (min-width:640px){dialog.sheet{border-radius:24px}}
+dialog.sheet::backdrop{background:rgba(8,14,22,.55);backdrop-filter:blur(3px)}
+.sheethead{padding-top:20px}
+.sheethead::before{content:"";position:absolute;top:7px;left:50%;width:42px;height:4px;border-radius:2px;background:var(--line);transform:translateX(-50%)}
+.field input,.field select,.field textarea{border-radius:10px;transition:border-color .15s,box-shadow .15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.ratebox,.ocbox,.taxbox,.dayhas,.confirmbox{border-radius:14px}
+.dcard{border-radius:12px;box-shadow:0 1px 2px rgba(16,28,45,.08)}
+details.settings>summary{list-style:none}
+details.settings>summary::-webkit-details-marker{display:none}
+details.settings>summary::after{content:"＋";float:right;color:var(--muted);font-weight:400}
+details.settings[open]>summary::after{content:"－"}
+@media (prefers-reduced-motion:reduce){button,.field input{transition:none}}
+@media (max-width:350px){.hero .totals{grid-template-columns:1fr}.hero .totals>div+div{border-left:0;border-top:1px solid var(--hero-line)}.hero .big{font-size:1.6rem}}
+</style>
+
+<div class="wrap">
+  <div class="updbanner" id="updBanner" hidden role="status"><span id="updText"></span><button type="button" id="updSee">See what's new</button><button type="button" id="updX" aria-label="Dismiss">✕</button></div>
+  <div class="hero">
+  <header class="top">
+    <div>
+      <h1>Overtime Tracker <button type="button" class="verchip" id="verChip" aria-label="Version and what's new"></button></h1>
+      <div class="sub" id="rateLine">Hourly rate $65.97</div>
+    </div>
+    <div class="status" id="status">Loading…</div>
+  </header>
+  <section class="card totals" aria-label="Totals">
+    <div><div class="label">Waiting for pay stub</div><div class="big wait" id="wAmt">$0.00</div><div class="netl" id="wNet"></div><div class="small" id="wHrs">0 entries</div></div>
+    <div><div class="label">Confirmed <span id="yrLbl"></span></div><div class="big done" id="cAmt">$0.00</div><div class="netl" id="cNet"></div><div class="small" id="cHrs">0 entries</div></div>
+    <div class="wsplit" id="wSplit" aria-label="Waiting for pay stub, by type"></div>
+    <div class="lto bank" id="bankOt" aria-label="Overtime LTO bank"></div>
+    <div class="lto bank" id="bankOc" aria-label="OA LTO bank"></div>
+  </section>
+  </div>
+
+  <section class="card">
+    <div class="sectionhead"><h2>Calendar</h2><span class="hint" style="grid-column:auto">Tap a day to log overtime, a callback, court or on call</span></div>
+    <div class="calwrap">
+        <div class="cal" aria-label="Calendar">
+          <div class="calhead"><button type="button" id="calPrev" aria-label="Previous month">‹</button><strong id="calTitle">—</strong><button type="button" id="calNext" aria-label="Next month">›</button></div>
+          <div class="calgrid" id="calGrid"></div>
+          <div class="callegend"><span><i class="sw" style="background:var(--accent-soft);border:1px solid var(--accent)"></i>RTO, paid 2×</span><span><i class="sw" style="background:var(--ink)"></i>Pay period starts</span><span><i class="sw" style="background:var(--work)"></i>Your shift</span><span><i class="sw" style="background:var(--otc)"></i>Overtime</span><span><i class="sw" style="background:var(--oc)"></i>On call</span><span><i class="sw" style="background:var(--accent)"></i>Waiting (hrs)</span><span><i class="sw" style="background:var(--ok)"></i>Confirmed</span></div>
+        </div>    </div>
+    <div class="calfoot"><button type="button" class="btn-primary" id="logToday">Log time for today</button></div>
+  </section>
+
+  <dialog id="sheet" class="sheet" aria-labelledby="formTitle">
+    <div class="sheethead"><div><h2 id="formTitle">Add overtime</h2><div id="sheetDate" class="sheetdate"></div></div><button type="button" id="sheetClose" aria-label="Close">✕</button></div>
+    <form class="add" id="otForm" novalidate>
+      <div class="field full"><label for="fType">Type</label>
+        <select id="fType"><option value="ot">Overtime</option><option value="callback">Callback (3 hr minimum)</option><option value="callhome">Callback worked at home (1 hr minimum)</option><option value="court">Court while off duty (4 hr minimum)</option><option value="oncall">On call (OA)</option></select></div>
+      <input type="hidden" id="fDate">
+      <div class="dayhas" id="dayHas" hidden></div>
+      <button type="button" class="btn-primary addmore" id="addMore" hidden>+ Log more time on this day</button>
+      <div class="ocbox" id="ocBox" hidden>
+        <span class="label" id="ocLvlLbl">On-call level</span>
+        <div class="seg" role="radiogroup" aria-labelledby="ocLvlLbl">
+          <label><input type="radio" name="ocl" value="OA" checked>OA · 1 hr per 8</label>
+          <label><input type="radio" name="ocl" value="OR">OR · 1 hr per 4</label>
+        </div>
+        <div class="field"><span class="label">On-call start</span><div class="dtpair"><input type="date" id="ocStartD" aria-label="On-call start date"><select id="ocStartT" class="tsel" aria-label="On-call start time"></select></div><input type="hidden" id="ocStart"></div>
+        <div class="field"><span class="label">On-call finish</span><div class="dtpair"><input type="date" id="ocEndD" aria-label="On-call finish date"><select id="ocEndT" class="tsel" aria-label="On-call finish time"></select></div><input type="hidden" id="ocEnd"></div>
+        <div class="repeat" id="ocRepeatBox">
+          <div class="field"><label for="ocRepeat">Repeat</label>
+            <select id="ocRepeat"><option value="0">Doesn't repeat</option><option value="1">Every week</option><option value="2">Every 2 weeks</option><option value="3">Every 3 weeks</option><option value="4">Every 4 weeks</option></select></div>
+          <div class="field" id="ocUntilWrap" hidden><label for="ocUntil">Repeat until</label><input type="date" id="ocUntil"></div>
+          <p class="hint" id="ocRepeatHint" hidden></p>
+        </div>
+        <p class="hint" id="ocFillHint">Times are copied from your last on-call period. If you work during it, log the overtime or callback separately and those hours come off the on-call time (22.14).</p>
+      </div>
+      <div class="field wk"><label for="fStart">Start</label><select id="fStart" class="tsel" data-empty="Start time"></select></div>
+      <div class="field wk"><label for="fEnd">Finish</label><select id="fEnd" class="tsel" data-empty="Finish time"></select></div>
+      <div class="field wk"><label for="fHours">Hours worked</label><input type="number" id="fHours" inputmode="decimal" min="0" step="0.25" placeholder="or type hours"></div>
+      <div class="ratebox wk" aria-live="polite">
+        <div class="rv"><span class="label">Rate</span><b id="rateVal">1.5×</b><span id="rateWhy"></span></div>
+        <label class="ckline"><input type="checkbox" id="fRecalled">Recalled from annual leave or LTO (leave not reinstated)</label>
+      </div>
+      <div class="field full"><span class="label" id="compLbl">Paid as</span>
+        <div class="seg" role="radiogroup" aria-labelledby="compLbl">
+          <label><input type="radio" name="comp" value="cash" checked>Cash</label>
+          <label><input type="radio" name="comp" value="lto">Lieu time (LTO)</label>
+        </div></div>
+      <div class="field full"><label for="fNote">Notes</label><textarea id="fNote" rows="3" maxlength="1000" placeholder="What was it for? e.g. file #, incident, who approved it, court case"></textarea></div>
+      <div class="confirmbox" id="confirmBox" hidden>
+        <div class="field"><label for="fStub">Pay stub date</label><input type="date" id="fStub"></div>
+        <div class="field"><label for="fPaid">Amount on stub ($)</label><input type="number" id="fPaid" inputmode="decimal" min="0" step="0.01" placeholder="optional"></div>
+      </div>
+      <p class="preview" id="preview">Expected pay: <b>$0.00</b></p>
+      <div class="taxbox" id="taxBox" hidden aria-live="polite"></div>
+      <p class="formerr" id="formErr" hidden></p>
+      <div class="actions"><button type="submit" class="btn-primary" id="saveBtn">Add overtime</button><button type="button" id="cancelEdit" hidden>Cancel</button><button type="button" id="sheetDelete" class="danger" hidden>Delete</button></div>
+      <button type="button" id="sheetDelSeries" class="danger linkish" hidden>Delete this and later repeats</button>
+    </form>
+  </dialog>
+
+  <dialog id="confDlg" class="sheet confdlg" aria-labelledby="confTitle">
+    <div class="sheethead"><div><h2 id="confTitle">Confirm overtime paid?</h2><div id="confWhat" class="sheetdate"></div></div><button type="button" id="confClose" aria-label="Close">✕</button></div>
+    <div class="confbody">
+      <p id="confMsg" class="small"></p>
+      <div class="confgrid" id="confFields">
+        <div class="field"><label for="confStub">Pay stub date</label><input type="date" id="confStub"></div>
+        <div class="field"><label for="confPaid">Amount on stub (optional)</label><input type="number" id="confPaid" inputmode="decimal" min="0" step="0.01"></div>
+      </div>
+      <div class="actions"><button type="button" class="btn-primary" id="confYes">Confirm</button><button type="button" id="confNo">Cancel</button></div>
+    </div>
+  </dialog>
+
+  <section class="card">
+    <div class="sectionhead"><h2>Your overtime</h2></div>
+    <div class="tabs" role="group" aria-label="Show">
+      <button type="button" data-f="wait" aria-pressed="true">Waiting</button>
+      <button type="button" data-f="done" aria-pressed="false">Confirmed</button>
+      <button type="button" data-f="all" aria-pressed="false">All</button>
+    </div>
+    <div class="pnav"><button type="button" id="pOlder" aria-label="Older pay period">‹ Older</button><span id="pPos" class="small"></span><button type="button" id="pNewer" aria-label="Newer pay period">Newer ›</button></div>
+    <div id="list" class="periods" tabindex="0" aria-label="Pay periods, swipe left or right"></div>
+  </section>
+
+  <details class="card settings">
+    <summary>Settings</summary>
+    <form class="setgrid" id="setForm" novalidate>
+      <div class="field full"><span class="label">Your schedule (tap a day to change it)</span>
+        <div class="sched" id="sched"></div>
+        <p class="hint">Work = scheduled shift (extra hours 1.5×). TOW = time off work from your compressed plan (1.5×). RTO = regular time off (2×). Set to your 4/10: Mon–Thu work, Fri TOW, Sat–Sun RTO.</p></div>
+      <div class="field"><label for="sPayStart">A pay period start date</label><input type="date" id="sPayStart"></div>
+      <div class="field"><label for="sPpNum">This pay period's number</label><input type="number" id="sPpNum" inputmode="numeric" min="1" max="27" step="1"></div>
+      <p class="hint" id="payHint">Pay periods repeat every 14 days from this date.</p>
+      <div class="field"><label for="sShiftStart">Shift start</label><select id="sShiftStart" class="tsel"></select></div>
+      <div class="field"><label for="sShiftEnd">Shift finish</label><select id="sShiftEnd" class="tsel"></select></div>
+      <div class="field full taxset"><span class="label">Lieu time bank starting balances</span>
+        <div class="setgrid2">
+          <div class="field"><label for="sLtoOt">Overtime LTO (hrs)</label><input type="number" id="sLtoOt" inputmode="decimal" min="0" step="0.25"></div>
+          <div class="field"><label for="sLtoOc">On-call LTO (hrs)</label><input type="number" id="sLtoOc" inputmode="decimal" min="0" step="0.25"></div>
+          <div class="field"><label for="sLtoAsOf">Balances as of</label><input type="date" id="sLtoAsOf"></div>
+        </div>
+        <p class="hint">Enter what your banks show today (from your leave records). Confirmed LTO entries dated after the "as of" date are added on top; anything on or before it is treated as already included.</p>
+      </div>
+      <div class="field full taxset"><span class="label">Take-home estimate (2026 federal + BC tax tables)</span>
+        <div class="setgrid2">
+          <div class="field"><label for="sSalary">Annual salary</label><input type="number" id="sSalary" inputmode="decimal" min="0" step="1"></div>
+          <div class="field"><label for="sTaxBase">Taxable income before overtime</label><input type="number" id="sTaxBase" inputmode="decimal" min="0" step="1"></div>
+        </div>
+        <label class="ckline"><input type="checkbox" id="sCpp">CPP is deducted from my pay</label>
+        <label class="ckline"><input type="checkbox" id="sEi">EI is deducted from my pay</label>
+        <p class="hint">Taxable income starts at your salary minus pension contributions: $137,677 − about $16,819 (your stub's $644.69 × 26.09 pays) = $120,858. Each overtime dollar is taxed at your top federal and BC rates, and CPP and EI come off only until they reach their 2026 maximums. Overtime is assumed not to be pensionable. Your actual payroll withholding on a single pay stub can differ, since payroll annualizes each pay. Your true tax is settled when you file.</p>
+      </div>
+      <div class="field"><label for="sRate">Hourly rate</label><input type="number" id="sRate" inputmode="decimal" min="0" step="0.01"></div>
+      <div class="field"><label for="sCur">Currency symbol</label><input type="text" id="sCur" maxlength="3"></div>
+      <p class="hint">Your hourly rate is your annual salary ÷ 2,087.04. Your stub shows $5,277.41 for 80 hours, which matches Sgt. Step 2 ($137,677), so $65.97 an hour. Change this when you get a raise. Entries you already logged keep the rate they were saved with.</p>
+      <div class="field full"><button type="submit" class="btn-primary">Save settings</button></div>
+    </form>
+  </details>
+
+  <details class="card settings" id="aboutBox">
+    <summary>About &amp; what's new</summary>
+    <div class="about">
+      <p class="small" id="aboutLine"></p>
+      <div id="changelog"></div>
+      <div class="verrules">
+        <span class="label">How versions are numbered (MAJOR.MINOR.PATCH)</span>
+        <ul>
+          <li><b>Patch</b> (2.0.<i>x</i>): minimum change. Bug fixes, wording and small visual or calculation corrections. No new features and no change to saved data.</li>
+          <li><b>Minor</b> (2.<i>x</i>.0): new features that work alongside everything already there. Existing entries and settings keep working unchanged.</li>
+          <li><b>Major</b> (<i>x</i>.0.0): maximum change. Changes how data is stored or how existing features behave. Saved data is upgraded automatically on first open, and the notes say what changed.</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+</div>
+
+<script>
+/* ===== CALC START ===== */
+const DEFAULTS={ppOffset:0,rate:65.97,currency:"$",salary:137677,taxBase:120858,payCpp:true,payEi:true,sched:["rto","work","work","work","work","tow","rto"],payStart:"2026-10-29",shift:{start:"06:30",end:"16:30"}};
+const mins=t=>{const [h,m]=t.split(":").map(Number);return h*60+m;};
+const dowOf=d=>{const [y,m,dd]=d.split("-").map(Number);return new Date(y,m-1,dd).getDay();};
+const clock=t=>{let [h,m]=t.split(":").map(Number);const ap=h<12?"am":"pm";h=h%12||12;return h+":"+String(m).padStart(2,"0")+ap;};
+/* Split worked time into hours inside vs outside your scheduled shift (that day, and the next day if it runs past midnight). */
+function shiftSplit(dateStr,start,end,sched,shift){
+  if(!start||!end) return null;
+  const sc=sched||DEFAULTS.sched, sh=shift||DEFAULTS.shift, ss=mins(sh.start), se=mins(sh.end), dow=dowOf(dateStr);
+  let a=mins(start), b=mins(end); if(b<=a) b+=1440; let inside=0;
+  for(const k of [0,1]){ if(sc[(dow+k)%7]!=="work") continue; inside+=Math.max(0,Math.min(b,se+1440*k)-Math.max(a,ss+1440*k)); }
+  return {total:(b-a)/60,inside:inside/60,outside:(b-a-inside)/60};
+}
+/* 26.04: called back within 3 hours before a scheduled shift -> paid for the time worked before the shift starts, no 3-hour minimum. */
+function preShiftHours(dateStr,start,sched,shift){
+  if(!start) return null; const sc=sched||DEFAULTS.sched, ss=mins((shift||DEFAULTS.shift).start), st=mins(start);
+  return sc[dowOf(dateStr)]==="work"&&st<ss&&ss-st<=180 ? (ss-st)/60 : null;
+}
+/* Bi-weekly pay periods: 14-day blocks counted from any known period start. Returns {start,end} as YYYY-MM-DD. */
+function payPeriod(dateStr,anchor){
+  const u=s=>{const [y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d);};
+  const f=t=>new Date(t).toISOString().slice(0,10), DAY=86400000;
+  const a=u(anchor||DEFAULTS.payStart), n=Math.floor((u(dateStr)-a)/(14*DAY)), st=a+n*14*DAY;
+  return {start:f(st),end:f(st+13*DAY)};
+}
+/* Pay period number within its year: PP 1 is the first period that ends in January (so Oct 29 – Nov 11, 2026 is PP 23). `offset` adjusts if the employer's numbering differs. */
+function ppNumber(dateStr,anchor,offset){
+  const u=s=>{const [y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d);};
+  const pp=payPeriod(dateStr,anchor), y=pp.end.slice(0,4), first=payPeriod(y+"-01-01",anchor).end;
+  return Math.round((u(pp.end)-u(first))/(14*86400000))+1+(offset||0);
+}
+const DAYNAME=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+/* Decide the overtime rate from the day, per clause 25.04. sched[dow] is work | tow | rto. */
+function autoRate(dateStr,recalled,sched,shift){
+  const [y,m,d]=dateStr.split("-").map(Number); const dow=new Date(y,m-1,d).getDay(); const kind=(sched||DEFAULTS.sched)[dow];
+  if(recalled) return {mult:2,why:"Recalled from leave, leave not reinstated (25.04(b)(ii))"};
+  if(kind==="rto") return {mult:2,why:DAYNAME[dow]+" is regular time off (25.04(b)(i))"};
+  if(kind==="tow") return {mult:1.5,why:DAYNAME[dow]+" is time off work on your compressed plan (25.04(a)(ii))"};
+  const sh=shift||DEFAULTS.shift;
+  return {mult:1.5,why:"Hours outside your "+clock(sh.start)+"–"+clock(sh.end)+" "+DAYNAME[dow]+" shift (25.04(a)(i))"};
+}
+/* Overtime that runs past midnight into a day with a different rate (e.g. Sunday RTO 2× into a Monday workday 1.5×)
+   is split by day, since RTO is a 24-hour period ending at midnight. Returns a blended multiplier and the parts, or null. */
+function dayRates(dateStr,start,end,recalled,sched,shift){
+  if(!start||!end) return null;
+  const sc=sched||DEFAULTS.sched, sh=shift||DEFAULTS.shift, ss=mins(sh.start), se=mins(sh.end), dow=dowOf(dateStr);
+  let a=mins(start), b=mins(end); if(b<=a) b+=1440; if(b<=1440) return null;
+  const out=(lo,hi,k)=>{let t=hi-lo; if(sc[(dow+k)%7]==="work") t-=Math.max(0,Math.min(hi,se+1440*k)-Math.max(lo,ss+1440*k)); return Math.max(0,t)/60;};
+  const [y,m,d]=dateStr.split("-").map(Number), next=new Date(Date.UTC(y,m-1,d+1)).toISOString().slice(0,10);
+  const h1=out(a,1440,0), h2=out(1440,b,1), r1=autoRate(dateStr,recalled,sc,sh), r2=autoRate(next,recalled,sc,sh), tot=h1+h2;
+  if(r1.mult===r2.mult||!tot||!h1||!h2) return null;
+  return {mult:(h1*r1.mult+h2*r2.mult)/tot, segs:[{day:DAYNAME[dow],h:h1,mult:r1.mult,why:r1.why},{day:DAYNAME[(dow+1)%7],h:h2,mult:r2.mult,why:r2.why}]};
+}
+/* Claim types and their minimum paid hours, from the RCMP RM collective agreement. */
+const TYPES={
+  ot:{name:"Overtime",min:0,ref:"Art. 25"},
+  callback:{name:"Callback",min:3,ref:"26.02: 3 hr minimum"},
+  callhome:{name:"Callback at home",min:1,ref:"26.06: 1 hr minimum"},
+  court:{name:"Court, off duty",min:4,ref:"27.01(d): 4 hr minimum"},
+  oncall:{name:"On call",min:0,ref:"Art. 22"}
+};
+/* On call (Article 22): 1 hr straight time per 8 hrs on OA (22.10) or per 4 hrs on OR (22.06), pro-rated. */
+const OC={OA:{div:8,ref:"22.10"},OR:{div:4,ref:"22.06"}};
+let CALC_ALL=[];
+function toMs(dt){const [d,t]=dt.split("T");const [y,m,dd]=d.split("-").map(Number);const [h,mi]=(t||"00:00").split(":").map(Number);return Date.UTC(y,m-1,dd,h,mi);}
+function windowHours(a,b){return (toMs(b)-toMs(a))/3600000;}
+function basePaid(e){const t=TYPES[e.type]||TYPES.ot; if(e.preShift) return floor15(e.hours); return Math.max(t.min,floor15(e.hours));}
+/* 22.14 / 30.07: hours paid as overtime, callback or court can't also be paid as on-call. Returns those paid hours inside the on-call window. */
+function ocDeduct(e,all){
+  const a=toMs(e.ocStart), b=toMs(e.ocEnd); let h=0;
+  for(const c of all||[]){
+    if(c.id===e.id||c.type==="oncall") continue;
+    const claim=basePaid(c);
+    if(c.start){ const cs=toMs(c.date+"T"+c.start); h+=Math.max(0,Math.min(b,cs+claim*3600000)-Math.max(a,cs))/3600000; }
+    else if(c.date>=e.ocStart.slice(0,10)&&c.date<=e.ocEnd.slice(0,10)) h+=claim;
+  }
+  return Math.min(h,Math.max(0,e.hours));
+}
+function paidHours(e,all){
+  if(e.type==="oncall"){const ded=ocDeduct(e,all||CALC_ALL);return Math.max(0,e.hours-ded)/(OC[e.level]||OC.OA).div;}
+  return basePaid(e);
+}
+/* 25.02: paid for each COMPLETED 15 minutes. */
+function floor15(h){return Math.floor(h*4+1e-9)/4;}
+function expected(e){return Math.round(paidHours(e)*e.mult*e.rate*100)/100;}
+function ltoCredit(e){return paidHours(e)*e.mult;}
+function spanHours(start,end){
+  if(!start||!end)return null;
+  const [a,b]=start.split(":").map(Number),[c,d]=end.split(":").map(Number);
+  let m=(c*60+d)-(a*60+b); if(m<=0)m+=1440; return m/60;
+}
+/* Repeat an on-call window every N weeks while its start date is on or before `until`. Max 60. */
+function occurrences(startDT,endDT,everyWeeks,until){
+  const f=t=>new Date(t).toISOString().slice(0,16), a=toMs(startDT), b=toMs(endDT), step=everyWeeks*7*86400000, out=[];
+  for(let k=0;k<60;k++){const s=a+k*step; if(k>0&&(!everyWeeks||f(s).slice(0,10)>until)) break; out.push([f(s),f(b+k*step)]); if(!everyWeeks) break;}
+  return out;
+}
+/* An unconfirmed entry dated after `todayStr` is scheduled, not yet waiting for pay. */
+function summarize(entries,year,todayStr){
+  const s={waitAmt:0,waitLto:0,waitN:0,doneAmt:0,doneLto:0,doneN:0,ltoBank:0,orBank:0,schedAmt:0,schedLto:0,schedN:0};
+  for(const e of entries){
+    const lto=e.comp==="lto";
+    if(e.confirmed){
+      if(lto){ if(e.type==="oncall") s.orBank+=ltoCredit(e); else s.ltoBank+=ltoCredit(e); }
+      if(!year||(e.stubDate||e.date).slice(0,4)===String(year)){
+        s.doneN++; if(lto) s.doneLto+=ltoCredit(e); else s.doneAmt+=(e.paid!=null?e.paid:expected(e));
+      }
+    }else if(todayStr&&e.date>todayStr){ s.schedN++; if(lto) s.schedLto+=ltoCredit(e); else s.schedAmt+=expected(e); }
+    else{ s.waitN++; if(lto) s.waitLto+=ltoCredit(e); else s.waitAmt+=expected(e); }
+  }
+  return s;
+}
+/* ---- 2026 tax tables (CRA, BC, CPP, EI) for take-home estimates ---- */
+const TAX2026={
+  fed:[[58523,.14],[117045,.205],[181440,.26],[258482,.29],[Infinity,.33]],
+  bc:[[50363,.056],[100728,.077],[115648,.105],[140430,.1229],[190405,.147],[265545,.168],[Infinity,.205]],
+  cpp:{ympe:74600,yampe:85000,rate:.0595,rate2:.04}, ei:{max:68900,rate:.0163}
+};
+function bracketTax(inc,br){let t=0,lo=0;for(const [hi,r] of br){if(inc<=lo)break;t+=(Math.min(inc,hi)-lo)*r;lo=hi;}return t;}
+function band(from,amt,lo,hi){return Math.max(0,Math.min(from+amt,hi)-Math.max(from,lo));}
+/* Deductions on an extra `gross` dollars, given taxable income already earned this year (`base`) and pensionable/insurable earnings to date (`ytd`). */
+function deductions(gross,base,ytd,opt){
+  const T=TAX2026, fed=bracketTax(base+gross,T.fed)-bracketTax(base,T.fed), bc=bracketTax(base+gross,T.bc)-bracketTax(base,T.bc);
+  const cpp=opt.cpp?band(ytd,gross,0,T.cpp.ympe)*T.cpp.rate+band(ytd,gross,T.cpp.ympe,T.cpp.yampe)*T.cpp.rate2:0;
+  const ei=opt.ei?band(ytd,gross,0,T.ei.max)*T.ei.rate:0;
+  const r=x=>Math.round(x*100)/100, tot=r(fed)+r(bc)+r(cpp)+r(ei);
+  return {fed:r(fed),bc:r(bc),cpp:r(cpp),ei:r(ei),total:r(tot),net:r(gross-tot)};
+}
+/* ===== CALC END ===== */
+
+/* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
+const APP_VERSION="2.5.5";
+const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
+const CHANGELOG=[
+  {v:"2.5.5",date:"2026-11-07",kind:"patch",notes:[
+    "Overtime LTO and OA LTO banks are full progress bars: hours shown inside the bar, starting balance and earned hours in two shades, ticks every 20 hrs, and hours left before the 80-hr cap."]},
+  {v:"2.5.4",date:"2026-11-07",kind:"patch",notes:[
+    "Overtime and on-call entries share one layout in every tab: pay period and start → finish, status, then a two-line box showing how the pay is worked out (red for overtime, blue for on call)."]},
+  {v:"2.5.3",date:"2026-11-07",kind:"patch",notes:[
+    "Hours are written as \"hr\" / \"hrs\" everywhere instead of \"h\" (on-call lines, lieu time amounts and calendar badges)."]},
+  {v:"2.5.2",date:"2026-11-07",kind:"patch",notes:[
+    "On-call entries explain the pay in two short lines: hours on call minus hours worked, then OA's 1 hour per 8."]},
+  {v:"2.5.1",date:"2026-11-07",kind:"patch",notes:[
+    "Fix: overtime that runs past midnight into a day with a different rate is now split by day. Sunday 4:00 pm to Monday 6:00 am is 8 hrs at 2× plus 6 hrs at 1.5×, not 14 hrs at 2×."]},
+  {v:"2.5.0",date:"2026-11-07",kind:"minor",notes:[
+    "Time pickers use 15-minute steps (matching 25.02's completed 15-minute periods) for overtime, on-call and shift times.",
+    "On-call start and finish are a date box plus a time list.",
+    "Entries saved earlier at other minutes (e.g. 4:20) keep their exact time when edited."]},
+  {v:"2.4.0",date:"2026-11-07",kind:"minor",notes:[
+    "New look: navy header with your totals and lieu time bars, gold highlights, softer cards, segmented tabs, rounder calendar days and phone-style pop-ups.",
+    "No change to features or saved data."]},
+  {v:"2.3.0",date:"2026-11-07",kind:"minor",notes:[
+    "Starting balances for the Overtime LTO and On-call LTO banks, with an \"as of\" date (Settings).",
+    "Each bank shows starting hours plus hours earned since, against its 80-hour cap."]},
+  {v:"2.2.1",date:"2026-11-07",kind:"patch",notes:[
+    "\"Waiting for pay stub\" at the top now uses the same rules as the Waiting list, with an Overtime line and an On call line.",
+    "An on-call period starting later today is no longer counted before it begins."]},
+  {v:"2.2.0",date:"2026-11-07",kind:"minor",notes:[
+    "The Waiting tab is split into Overtime waiting and On call waiting, each with its own total.",
+    "Only on-call time that has started shows in the list and the totals; future on-call weekends stay on the calendar until they begin.",
+    "On-call periods under way show as In progress with their end time."]},
+  {v:"2.1.0",date:"2026-11-07",kind:"minor",notes:[
+    "Pay periods are numbered: Oct 29 – Nov 11, 2026 is PP 23. Numbers show in the header, on pay period cards and on each entry.",
+    "PP 1 is the first pay period ending in January; years with 27 pay periods are handled.",
+    "Settings: \"This pay period's number\" lets you correct the numbering if it ever differs from your stub."]},
+  {v:"2.0.1",date:"2026-11-07",kind:"patch",notes:[
+    "Overtime, callbacks and court worked during an on-call period now come off the on-call hours (22.14).",
+    "Entries on the same day sort by start time.",
+    "Added version number, version history and automatic data upgrades."]},
+  {v:"2.0.0",date:"2026-11-07",kind:"major",notes:[
+    "Calendar with pop-up entry and day details; shift, on-call and overtime drawn on a 24-hour timeline.",
+    "RCMP RM agreement rules: 1.5× / 2× by day (25.04), 15-minute blocks (25.02), callback and court minimums (26.02, 26.06, 27.01), early callback (26.04).",
+    "4/10 schedule with your 6:30am–4:30pm shift; time inside the shift isn't counted as overtime.",
+    "OA / OR on call (Art. 22) with auto-fill and repeats; separate overtime and on-call LTO banks.",
+    "Bi-weekly pay periods, a single waiting list and pay stub confirmation.",
+    "2026 federal and BC take-home estimates."]}
+];
+/* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
+function migrateSettings(st){
+  const o={...st}; const from=o.schema||1;
+  if(from<2){ o.sched=o.sched||DEFAULTS.sched; o.shift=o.shift||DEFAULTS.shift; o.payStart=o.payStart||DEFAULTS.payStart; }
+  o.schema=DATA_SCHEMA; return o;
+}
+function migrateEntry(e){
+  const o={...e};
+  if(!o.type) o.type="ot"; if(!o.comp) o.comp="cash"; if(o.rate==null) o.rate=DEFAULTS.rate; if(o.mult==null) o.mult=1.5;
+  return o;
+}
+const $=id=>document.getElementById(id);
+/* ---------- 15-minute time pickers ---------- */
+const tLabel=v=>{let [h,m]=v.split(":").map(Number);const ap=h<12?"am":"pm";h=h%12||12;return h+":"+String(m).padStart(2,"0")+" "+ap;};
+function ensureOpt(sel,v){ if(!v||[...sel.options].some(o=>o.value===v)) return;
+  const o=new Option(tLabel(v),v); const after=[...sel.options].find(x=>x.value&&x.value>v); sel.insertBefore(o,after||null); }
+function initTimeSelect(sel){
+  const empty=sel.dataset.empty; if(empty) sel.add(new Option(empty,""));
+  for(let m=0;m<1440;m+=15){const v=String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); sel.add(new Option(tLabel(v),v));}
+  /* keep exact times from older entries (e.g. 4:20) by adding them when set */
+  const d=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value");
+  Object.defineProperty(sel,"value",{configurable:true,get(){return d.get.call(this);},set(v){ensureOpt(this,v);d.set.call(this,v||(empty?"":"00:00"));}});
+}
+/* A hidden "YYYY-MM-DDTHH:MM" field driven by a date box and a 15-minute time list. */
+function bindDateTime(hid,dId,tId){
+  const h=$(hid), D=$(dId), T=$(tId); let v="";
+  Object.defineProperty(h,"value",{configurable:true,get(){return v;},set(x){v=x||""; D.value=v.slice(0,10); T.value=v.slice(11,16)||"00:00";}});
+  const fire=()=>{ v=D.value?D.value+"T"+(T.value||"00:00"):""; h.dispatchEvent(new Event("change")); };
+  D.addEventListener("change",fire); T.addEventListener("change",fire);
+}
+document.querySelectorAll("select.tsel").forEach(initTimeSelect);
+bindDateTime("ocStart","ocStartD","ocStartT"); bindDateTime("ocEnd","ocEndD","ocEndT");
+const nowLocal=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")+"T"+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");};
+const ppNo=d=>ppNumber(d,settings.payStart,settings.ppOffset||0);
+const MON=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+let settings={...DEFAULTS}, entries={}, store=null, editingId=null, filter="wait";
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+const pd=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);};
+const nice=s=>{const d=pd(s);return DOW[d.getDay()]+" "+MON[d.getMonth()].slice(0,3)+" "+d.getDate();};
+const dtShort=v=>{const [d,t]=v.split("T");return nice(d).slice(0,3)+" "+shortD(d)+", "+tLabel(t||"00:00");};
+/* "When" line, same style for every entry type. */
+function whenTxt(e){
+  if(e.type==="oncall"&&e.ocStart&&e.ocEnd) return dtShort(e.ocStart)+" → "+dtShort(e.ocEnd);
+  if(!e.start||!e.end) return dtShort(e.date+"T00:00").split(",")[0]+" · no times entered";
+  const endDate=mins(e.end)<=mins(e.start)?(()=>{const [y,m,d]=e.date.split("-").map(Number);return new Date(Date.UTC(y,m-1,d+1)).toISOString().slice(0,10);})():e.date;
+  return dtShort(e.date+"T"+e.start)+" → "+(endDate===e.date?tLabel(e.end):dtShort(endDate+"T"+e.end));
+}
+/* Two short lines showing how the pay is worked out, for overtime, callbacks and court. */
+function otMathLines(e){
+  const ph=paidHours(e), lto=e.comp==="lto", tail=lto?" banked":" pay", r2=x=>Math.round(x*100)/100;
+  if(e.segs&&e.segs.length>1) return [ e.segs.map(s=>hrU(s.h)+" × "+s.mult+"×").join(" + "), "= "+hrU(r2(ph*e.mult))+tail ];
+  const l1=hrU(e.hours)+" worked"+(ph!==e.hours?" → "+hrU(ph)+(ph>e.hours?" (minimum)":" (15-min blocks)"):"");
+  return [ l1, hrU(ph)+" × "+multTxt(e.mult)+" = "+hrU(r2(ph*e.mult))+tail ];
+}
+function mathBox(e,all){
+  const oc=e.type==="oncall", box=document.createElement("div"); box.className="mathbox "+(oc?"isoc":"isot");
+  for(const ln of (oc?ocMathLines(e,all):otMathLines(e))){ const d=document.createElement("div"); d.className="ocmath"; d.textContent=ln; box.append(d); }
+  return box;
+}
+/* Plain-language on-call math, as two short lines. */
+function ocMathLines(e,all){
+  const ded=ocDeduct(e,all), lv=OC[e.level]||OC.OA, net=Math.max(0,e.hours-ded), ph=paidHours(e,all);
+  return ded>0 ? [ hrU(e.hours)+" on call − "+hrU(ded)+" worked", "= "+hrU(net)+" ÷ "+lv.div+" = "+hrU(ph)+" paid" ]
+               : [ hrU(e.hours)+" on call", "÷ "+lv.div+" = "+hrU(ph)+" paid" ];
+}
+const ocLevel=()=>document.querySelector('input[name="ocl"]:checked').value;
+function setOcLevel(v){document.querySelectorAll('input[name="ocl"]').forEach(r=>r.checked=r.value===v);}
+function addDaysStr(d,n){const [y,m,dd]=d.split("-").map(Number);return new Date(Date.UTC(y,m-1,dd+n)).toISOString().slice(0,10);}
+/* Default on-call window from the picked date: Sat -> Mon 00:00, Fri -> Mon 00:00, other days -> next day. */
+function lastOnCall(){return Object.values(entries).filter(e=>e.type==="oncall"&&e.ocStart&&e.ocEnd).sort((a,b)=>(b.created||0)-(a.created||0))[0];}
+/* Fill the on-call window for the picked start date: copy the last on-call's start time, length and level; otherwise Sat->Mon style defaults. */
+function fillOcWindow(d){
+  const last=lastOnCall();
+  if(last){
+    const t=last.ocStart.slice(11,16), dur=toMs(last.ocEnd)-toMs(last.ocStart);
+    $("ocStart").value=d+"T"+t; $("ocEnd").value=new Date(toMs(d+"T"+t)+dur).toISOString().slice(0,16); setOcLevel(last.level||"OA");
+    $("ocFillHint").textContent="Copied from your last on-call ("+dtShort(last.ocStart)+" → "+dtShort(last.ocEnd)+"). Tap the day your on-call starts. If you work during it, log the overtime or callback separately and those hours come off the on-call time (22.14).";
+  }else{
+    const dow=pd(d).getDay(), span=dow===6?2:dow===5?3:1; $("ocStart").value=d+"T00:00"; $("ocEnd").value=addDaysStr(d,span)+"T00:00";
+    $("ocFillHint").textContent="Tapping a Saturday fills in Sat 12:00am to Mon 12:00am. Change it to match your designation; next time the app copies it. If you work during it, log the overtime or callback separately and those hours come off the on-call time (22.14).";
+  }
+  if(!$("ocUntil").value||$("ocUntil").value<d) $("ocUntil").value=addDaysStr(d,7*12);
+  repeatHint();
+}
+function repeatHint(){
+  const every=Number($("ocRepeat").value), H=$("ocRepeatHint");
+  $("ocUntilWrap").hidden=!every; H.hidden=!every; if(!every||!$("ocStart").value||!$("ocEnd").value) return;
+  const occ=occurrences($("ocStart").value,$("ocEnd").value,every,$("ocUntil").value||$("ocStart").value.slice(0,10));
+  const ds=occ.map(o=>shortD(o[0].slice(0,10)));
+  H.textContent="Adds "+occ.length+" on-call period"+(occ.length===1?"":"s")+": "+(ds.length>6?ds.slice(0,5).join(", ")+" … "+ds[ds.length-1]:ds.join(", "))+(occ.length===60?" (60 max)":"")+".";
+}
+function setMode(){const oc=$("fType").value==="oncall";
+  $("ocBox").hidden=!oc; document.querySelectorAll("#otForm .wk").forEach(el=>el.hidden=oc);
+  sheetDateTxt();
+  if(oc&&!$("ocStart").value) fillOcWindow($("fDate").value||today());}
+const shortD=s=>{const d=pd(s);return MON[d.getMonth()].slice(0,3)+" "+d.getDate();};
+const money=n=>settings.currency+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const hrs=n=>(Math.round(n*100)/100).toString();
+const multTxt=m=>m==1.5?"1.5×":m==2?"2×":(Math.round(m*100)/100)+"×";
+const rateTxt=e=>e.segs&&e.segs.length>1?e.segs.map(s=>s.mult+"×").join(" + "):multTxt(e.mult);
+const hrU=n=>hrs(n)+(Math.abs(n-1)<1e-9?" hr":" hrs");
+const segTxt=segs=>segs.map(s=>hrs(s.h)+" hrs "+s.day+" at "+s.mult+"×").join(" + ");
+const t12=t=>{let [h,m]=t.split(":").map(Number);const ap=h<12?"am":"pm";h=h%12||12;return h+":"+String(m).padStart(2,"0")+ap;};
+const nEntries=n=>n+" "+(n===1?"entry":"entries");
+const comp=()=>document.querySelector('input[name="comp"]:checked').value;
+
+/* What counts as waiting: unconfirmed overtime dated today or earlier, and unconfirmed on call that has started. Used by the list and the top total. */
+function waitingLists(all){
+  const td=today(), now=nowLocal(), un=all.filter(e=>!e.confirmed);
+  return {ot:un.filter(e=>e.type!=="oncall"&&e.date<=td), oc:un.filter(e=>e.type==="oncall"&&(e.ocStart||e.date)<=now)};
+}
+/* LTO bank = starting balance + confirmed LTO entries dated after the "as of" date (earlier ones are already in the starting balance). */
+function bankBalance(all,kind){
+  const asOf=settings.ltoAsOf||"", start=Number((settings.ltoStart||{})[kind])||0;
+  const earned=all.filter(e=>e.confirmed&&e.comp==="lto"&&((kind==="oc")===(e.type==="oncall"))&&(!asOf||e.date>asOf)).reduce((t,e)=>t+ltoCredit(e),0);
+  return {start,earned};
+}
+/* ---------- take-home estimate ---------- */
+const grossOf=x=>x.confirmed&&x.paid!=null?x.paid:expected(x);
+const orderKey=x=>x.date+"|"+String(Math.min(x.created||0,9e15)).padStart(16,"0");
+function netInfo(e){
+  if(e.comp==="lto"||!e.date) return null;
+  const y=e.date.slice(0,4), k=orderKey(e); let prior=0;
+  for(const x of Object.values(entries)){ if(x.id===e.id||x.comp==="lto"||!x.date||x.date.slice(0,4)!==y) continue; if(orderKey(x)<k) prior+=grossOf(x); }
+  const doy=(toMs(e.date+"T00:00")-toMs(y+"-01-01T00:00"))/86400000+1;
+  const sal=settings.salary??DEFAULTS.salary, base=settings.taxBase??DEFAULTS.taxBase;
+  return deductions(grossOf(e),base+prior,sal*doy/365+prior,{cpp:settings.payCpp??DEFAULTS.payCpp,ei:settings.payEi??DEFAULTS.payEi});
+}
+function netText(n){ if(!n) return ""; const parts=["federal tax "+money(n.fed),"BC tax "+money(n.bc)]; if(n.cpp) parts.push("CPP "+money(n.cpp)); if(n.ei) parts.push("EI "+money(n.ei)); return "Take-home ≈ "+money(n.net)+" ("+parts.join(", ")+")"; }
+const sumNet=list=>list.reduce((t,x)=>{const n=netInfo(x);return t+(n?n.net:0);},0);
+function render(){
+  renderCal();
+  const cp=payPeriod(today(),settings.payStart);
+  $("rateLine").textContent="Hourly rate "+money(settings.rate)+" · Pay period "+ppNo(cp.start)+" ("+shortD(cp.start)+" – "+shortD(cp.end)+")";
+  const yr=new Date().getFullYear(); $("yrLbl").textContent=yr;
+  const all=Object.values(entries); CALC_ALL=all; const s=summarize(all,yr,today());
+  { const W=waitingLists(all), cashOf=l=>l.filter(x=>x.comp!=="lto").reduce((q,x)=>q+expected(x),0), ltoOf=l=>l.filter(x=>x.comp==="lto").reduce((q,x)=>q+ltoCredit(x),0);
+    const ot$=cashOf(W.ot), oc$=cashOf(W.oc), lt=ltoOf(W.ot)+ltoOf(W.oc);
+    $("wAmt").textContent=money(ot$+oc$);
+    $("wHrs").textContent=nEntries(W.ot.length+W.oc.length)+(lt?" · +"+hrs(lt)+" hrs LTO":"");
+    $("wSplit").textContent=""; 
+    for(const [lbl,l,v,c] of [["Overtime",W.ot,ot$,"ot"],["On call",W.oc,oc$,"oc"]]){
+      const r=document.createElement("div"); r.className="wrow "+c; const n=sumNet(l);
+      const a=document.createElement("span"); a.textContent=lbl+" ("+l.length+")";
+      const b=document.createElement("span"); b.className="num"; b.textContent=money(v)+(n?" · ≈ "+money(n):"");
+      r.append(a,b); $("wSplit").append(r);
+    }
+  }
+  $("cAmt").textContent=money(s.doneAmt);
+  $("cHrs").textContent=nEntries(s.doneN)+(s.doneLto?" · +"+hrs(s.doneLto)+" hrs LTO":"");
+  { const td=today(), yr0=String(yr);
+    const WW=waitingLists(all), wNet=sumNet([...WW.ot,...WW.oc]), cNet=sumNet(all.filter(e=>e.confirmed&&(e.stubDate||e.date).slice(0,4)===yr0));
+    $("wNet").textContent=wNet?"≈ "+money(wNet)+" take-home":""; $("cNet").textContent=cNet?"≈ "+money(cNet)+" take-home":""; }
+  for(const [k,id,name,cap] of [["ot","bankOt","Overtime LTO bank","25.12"],["oc","bankOc","OA LTO bank","25.13"]]){
+    const B=bankBalance(all,k), tot=B.start+B.earned, full=tot>=80, el=$(id); el.textContent="";
+    const head=document.createElement("div"); head.className="bhead";
+    const nm=document.createElement("span"); nm.className="label"; nm.textContent=name;
+    const val=document.createElement("span"); val.className="num bval"; val.textContent=hrs(tot)+" / 80 hrs";
+    head.append(nm,val);
+    const bar=document.createElement("div"); bar.className="pbar"+(full?" full":""); bar.setAttribute("role","progressbar");
+    bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax","80"); bar.setAttribute("aria-valuenow",String(Math.round(tot*100)/100)); bar.setAttribute("aria-label",name+": "+hrs(tot)+" of 80 hours");
+    const pct=x=>Math.min(100,Math.max(0,x/80*100));
+    const sSeg=document.createElement("span"); sSeg.className="seg start"; sSeg.style.width=pct(Math.min(B.start,80))+"%";
+    const eSeg=document.createElement("span"); eSeg.className="seg earn"; eSeg.style.width=Math.max(0,pct(tot)-pct(Math.min(B.start,80)))+"%";
+    bar.append(sSeg,eSeg);
+    for(const t of [20,40,60]){const tk=document.createElement("i"); tk.className="tick"; tk.style.left=(t/80*100)+"%"; bar.append(tk);}
+    const tx=document.createElement("span"); tx.className="ptext"; tx.textContent=hrs(tot)+" hrs"; bar.append(tx);
+    const foot=document.createElement("div"); foot.className="bfoot";
+    const parts=[]; if(B.start) parts.push(hrs(B.start)+" starting"); if(B.earned||B.start) parts.push(hrs(B.earned)+" earned");
+    foot.textContent=(parts.length?parts.join(" + ")+" · ":"")+(full?"At the 80-hr cap ("+cap+")":hrs(80-tot)+" hrs left before the 80-hr cap ("+cap+")");
+    el.append(head,bar,foot);
+  }
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===filter)));
+  const L=$("list"); L.textContent="";
+  const when=x=>x.ocStart||(x.date+"T"+(x.start||"00:00"));
+  const shown=all.filter(e=>filter==="all"||(filter==="done")===!!e.confirmed).sort((a,b)=>when(a).localeCompare(when(b))||(a.created||0)-(b.created||0));
+  const pnav=document.querySelector(".pnav");
+  if(filter==="wait"){
+    pnav.hidden=true; L.classList.add("flat");
+    const td=today(), now=nowLocal();
+    const W=waitingLists(shown), otList=W.ot, ocList=W.oc, otFut=shown.filter(e=>e.type!=="oncall"&&e.date>td);   // on call worked or under way; future weekends stay on the calendar only
+    const section=(title,list,emptyTxt,cls)=>{
+      const card=document.createElement("div"); card.className="pcard wsec "+cls;
+      const h=document.createElement("div"); h.className="phead";
+      const t=document.createElement("div"); t.className="ptitle"; t.textContent=title;
+      const cash=list.filter(x=>x.comp!=="lto"), lto=list.filter(x=>x.comp==="lto"), gn=sumNet(cash);
+      const sm=document.createElement("div"); sm.className="num psum";
+      sm.textContent=nEntries(list.length)+" · "+money(cash.reduce((q,x)=>q+expected(x),0))+(gn?" (≈ "+money(gn)+" take-home)":"")+(lto.length?" · +"+hrs(lto.reduce((q,x)=>q+ltoCredit(x),0))+" hrs LTO":"");
+      h.append(t,sm); card.append(h);
+      if(!list.length){const em=document.createElement("div");em.className="empty";em.textContent=emptyTxt;card.append(em);}
+      else{const ul=document.createElement("ul");ul.className="list";list.forEach(e=>ul.append(buildEntry(e,all)));card.append(ul);}
+      return card;
+    };
+    L.append(section("Overtime waiting",otList,"No overtime waiting. Overtime, callbacks and court stay here until you confirm them on a pay stub.","wot"));
+    L.append(section("On call waiting",ocList,"No on-call time waiting. On-call periods appear here once they start.","woc"));
+    if(otFut.length){ const c=section("Scheduled overtime",otFut,"","wfut"); c.querySelector(".psum").textContent="Future dates. They move up once the day arrives."; L.append(c); }
+    return;
+  }
+  pnav.hidden=false; L.classList.remove("flat");
+  const cur=payPeriod(today(),settings.payStart).start;
+  const keys=[...new Set([...shown.map(e=>payPeriod(e.date,settings.payStart).start),cur])].sort();
+  if(!activeKey||!keys.includes(activeKey)) activeKey=keys.includes(cur)?cur:keys[keys.length-1];
+  const emptyMsg={wait:"Nothing waiting in this pay period.",done:"Nothing confirmed in this pay period yet.",all:"No overtime logged in this pay period."}[filter];
+  for(const key of keys){
+    const pp=payPeriod(key,settings.payStart), grp=shown.filter(x=>payPeriod(x.date,settings.payStart).start===key);
+    const card=document.createElement("div"); card.className="pcard"; card.dataset.key=key;
+    const h=document.createElement("div"); h.className="phead";
+    const a=document.createElement("div"); a.className="ptitle"; a.textContent="PP "+ppNo(pp.start)+" · "+shortD(pp.start)+" – "+shortD(pp.end)+", "+pp.end.slice(0,4);
+    if(key===cur){const c=document.createElement("span");c.className="tag cur";c.textContent="Current";a.append(c);}
+    const gc=grp.filter(x=>x.comp!=="lto").reduce((t,x)=>t+(x.confirmed&&x.paid!=null?x.paid:expected(x)),0);
+    const b=document.createElement("div"); b.className="num psum"; const gn=sumNet(grp); b.textContent=hrs(grp.reduce((t,x)=>t+paidHours(x),0))+" hrs · "+money(gc)+(gn?" (≈ "+money(gn)+" take-home)":"")+" · "+nEntries(grp.length);
+    h.append(a,b); card.append(h);
+    if(!grp.length){const em=document.createElement("div");em.className="empty";em.textContent=emptyMsg;card.append(em);L.append(card);continue;}
+    const ul=document.createElement("ul"); ul.className="list"; card.append(ul);
+    for(const e of grp){
+    ul.append(buildEntry(e,all));
+    }
+    L.append(card);
+  }
+  const target=L.querySelector('.pcard[data-key="'+activeKey+'"]');
+  if(target) L.scrollLeft=target.offsetLeft-L.offsetLeft;
+  updatePnav();
+}
+/* One overtime list row: tap to edit, checkbox to confirm, amounts on the right. */
+function buildEntry(e,all){
+    const lto=e.comp==="lto", ph=paidHours(e), typ=TYPES[e.type]||TYPES.ot;
+    const li=document.createElement("li"); li.className="entry tap"+(e.confirmed?" done":""); li.tabIndex=0;
+    li.setAttribute("aria-label","Open "+nice(e.date)+" "+typ.name+" to edit and see the tax breakdown");
+    li.onclick=ev=>{ if(ev.target.closest("button,label.chk,input")) return; startEdit(e.id); };
+    li.onkeydown=ev=>{ if((ev.key==="Enter"||ev.key===" ")&&ev.target===li){ ev.preventDefault(); startEdit(e.id); } };
+    const chk=document.createElement("label"); chk.className="chk"; chk.title=e.confirmed?"Confirmed on pay stub":"Mark as confirmed on pay stub";
+    const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!e.confirmed; cb.setAttribute("aria-label",(e.confirmed?"Unmark ":"Confirm ")+nice(e.date));
+    cb.onchange=()=>{ const want=cb.checked; cb.checked=!want; askConfirm(e.id,want); }; chk.append(cb,document.createElement("span"));
+    const main=document.createElement("div"); main.className="e-main";
+    const oc=e.type==="oncall";
+    const t=document.createElement("div"); t.className="e-top"; t.textContent=nice(e.date)+" · "+typ.name+(oc?" ("+(e.level||"OA")+")":"");
+    const tg=document.createElement("span"); tg.className="tag"+(oc?" ocl":""); tg.textContent=rateTxt(e); t.append(tg);
+    if(lto){const t2=document.createElement("span");t2.className="tag";t2.textContent="LTO";t.append(t2);}
+    const m=document.createElement("div"); m.className="e-meta";
+    m.append("PP "+ppNo(e.date)+" · "+whenTxt(e));
+
+    const m2=document.createElement("div"); m2.className="e-meta";
+    if(e.confirmed){
+      const ok=document.createElement("span"); ok.className="okt"; ok.textContent=(lto?(oc?"In on-call LTO bank":"In LTO bank"):"On stub")+(e.stubDate?" "+nice(e.stubDate):""); m2.append(ok);
+      if(!lto&&e.paid!=null&&Math.abs(e.paid-expected(e))>=0.01){const d=document.createElement("span");d.className="diff";d.textContent=" · stub "+money(e.paid)+" vs "+money(expected(e))+" expected";m2.append(d);}
+    }else if(oc&&e.ocStart&&e.ocStart<=nowLocal()&&e.ocEnd>nowLocal()) m2.append("In progress · ends "+dtShort(e.ocEnd));
+    else if(e.date>today()) m2.append("Scheduled");
+    else { const dd=Math.round((toMs(today()+"T00:00")-toMs(((e.type==="oncall"&&e.ocEnd)?e.ocEnd.slice(0,10):e.date)+"T00:00"))/86400000);
+      m2.append(dd<=0?"Waiting":"Waiting "+dd+" day"+(dd===1?"":"s")); }
+    if(e.seriesId){const sr=document.createElement("span");sr.textContent=" · repeats every "+(e.every===1?"week":e.every+" weeks");m2.append(sr);}
+    main.append(t,m,m2);
+
+    const r=document.createElement("div"); r.className="e-right";
+    const amt=document.createElement("div"); amt.className="e-amt";
+    amt.textContent=lto?"+"+hrU(ltoCredit(e)):money(e.confirmed&&e.paid!=null?e.paid:expected(e));
+    { const n=netInfo(e); if(n){ const nl=document.createElement("div"); nl.className="netl"; nl.textContent="≈ "+money(n.net)+" net"; r.append(nl); } }
+    const bx=document.createElement("div"); bx.className="e-btns";
+    const eb=document.createElement("button"); eb.type="button"; eb.textContent="Edit"; eb.onclick=()=>startEdit(e.id);
+    const db=document.createElement("button"); db.type="button"; db.textContent="Delete"; db.className="danger";
+    db.onclick=()=>{if(db.dataset.armed){removeEntry(e.id);}else{db.dataset.armed="1";db.textContent="Sure?";setTimeout(()=>{if(db.isConnected){delete db.dataset.armed;db.textContent="Delete";}},3000);}};
+    bx.append(eb,db); r.prepend(amt); r.append(bx);
+    li.append(chk,main,r);
+    li.append(mathBox(e,all));
+    if(e.note){const nt=document.createElement("div");nt.className="e-note";nt.textContent=e.note;li.append(nt);}
+    else if(!e.confirmed){const nb=document.createElement("button");nb.type="button";nb.className="addnote";nb.textContent="+ Add a note";
+      nb.onclick=()=>{startEdit(e.id);setTimeout(()=>{$("fNote").scrollIntoView({block:"center"});$("fNote").focus();},50);};li.append(nb);}
+    return li;
+}
+let activeKey=null, scrollT;
+function updatePnav(){
+  const cards=[...$("list").children], i=cards.findIndex(c=>c.dataset.key===activeKey);
+  $("pPos").textContent=cards.length&&activeKey?("PP "+ppNo(activeKey)+" · "+(i+1)+" of "+cards.length):"";
+  $("pOlder").disabled=i<=0; $("pNewer").disabled=i<0||i>=cards.length-1;
+}
+function goPeriod(step){
+  const L=$("list"), cards=[...L.children], i=cards.findIndex(c=>c.dataset.key===activeKey), n=cards[i+step]; if(!n)return;
+  activeKey=n.dataset.key; L.scrollTo({left:n.offsetLeft-L.offsetLeft,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); updatePnav();
+}
+
+/* ---------- form ---------- */
+function draft(){
+  const prev=editingId&&entries[editingId];
+  if($("fType").value==="oncall"){
+    const a=$("ocStart").value,b=$("ocEnd").value, h=a&&b?windowHours(a,b):0;
+    return {date:a?a.slice(0,10):"",created:prev?prev.created:9e15,id:editingId||"_draft",type:"oncall",level:ocLevel(),ocStart:a,ocEnd:b,hours:h,mult:1,comp:comp(),rate:prev?prev.rate:settings.rate,why:""};
+  }
+  let ar=autoRate($("fDate").value||today(),$("fRecalled").checked,settings.sched,settings.shift);
+  const dr=dayRates($("fDate").value||today(),$("fStart").value,$("fEnd").value,$("fRecalled").checked,settings.sched,settings.shift);
+  if(dr) ar={mult:dr.mult,why:"Split at midnight: "+segTxt(dr.segs)+". RTO ends at midnight (25.04).",segs:dr.segs};
+  const ty=$("fType").value, ps=(ty==="callback"||ty==="callhome")?preShiftHours($("fDate").value||today(),$("fStart").value,settings.sched,settings.shift):null;
+  return {id:editingId||"_draft",date:$("fDate").value||today(),created:prev?prev.created:9e15,type:ty,hours:Number($("fHours").value)||0,mult:ar.mult,segs:ar.segs||null,why:ar.why,comp:comp(),rate:prev?prev.rate:settings.rate,preShift:ps!=null};
+}
+function updatePreview(){
+  const d=draft(), P=$("preview"); P.textContent=""; $("taxBox").hidden=true;
+  $("rateVal").textContent=rateTxt(d); $("rateWhy").textContent=d.why;
+  if(d.type==="oncall"){
+    if(!(d.hours>0)){P.textContent="Set the on-call start and finish.";return;}
+    const ded=ocDeduct(d,Object.values(entries)), ph=paidHours(d,Object.values(entries)), lv=OC[d.level], b=document.createElement("b");
+    const how=hrs(d.hours)+" hrs on call"+(ded>0?" − "+hrs(ded)+" hrs worked":"")+" ÷ "+lv.div+" = "+hrs(ph)+" hrs at straight time ("+lv.ref+")";
+    if(d.comp==="lto"){b.textContent=hrs(ph)+" hrs on-call LTO";P.append("Earns ",b," · "+how);}
+    else{b.textContent=money(expected({...d,hours:d.hours},Object.values(entries)));P.append("Expected pay ",b," · "+how);addNet(P,d);}
+    return;
+  }
+  if(!d.hours){P.textContent="Enter start and finish times, or type the hours.";return;}
+  const ph=paidHours(d), typ=TYPES[d.type];
+  let why=""; if(d.preShift) why=" (26.04: called back within 3 hrs of your shift, paid until it starts, no minimum)"; else if(ph>d.hours) why=" ("+typ.ref+")"; else if(ph<d.hours) why=" (paid in completed 15 min blocks, 25.02)";
+  const sp=shiftSplit($("fDate").value||today(),$("fStart").value,$("fEnd").value,settings.sched,settings.shift);
+  if(sp&&sp.inside>0&&!d.preShift) why+=" · "+hrs(sp.inside)+" hrs inside your regular shift not counted";
+  const b=document.createElement("b");
+  if(d.comp==="lto"){b.textContent=hrs(ltoCredit(d))+" hrs LTO"; P.append("Earns ",b," · "+(d.segs?segTxt(d.segs):hrs(ph)+" hrs × "+multTxt(d.mult))+why);}
+  else{b.textContent=money(expected(d)); P.append("Expected pay ",b," · "+(d.segs?segTxt(d.segs)+" × "+money(d.rate):hrs(ph)+" hrs × "+multTxt(d.mult)+" × "+money(d.rate))+why); addNet(P,d);}
+}
+function addNet(P,d){
+  const prev=editingId&&entries[editingId], pv=$("fPaid").value, useStub=!!(prev&&prev.confirmed&&pv!=="");
+  const n=netInfo({...d,confirmed:useStub,paid:useStub?Number(pv):null}); const B=$("taxBox"); B.textContent="";
+  if(!n){B.hidden=true;return;}
+  const gross=Math.round((n.net+n.total)*100)/100;
+  const h=document.createElement("div"); h.className="label"; h.textContent="Tax breakdown (estimate)"; B.append(h);
+  const rows=[[useStub?"Gross (amount on stub)":"Gross pay",gross,""],["Federal tax",-n.fed,""],["BC tax",-n.bc,""]];
+  if(n.cpp) rows.push(["CPP",-n.cpp,""]); if(n.ei) rows.push(["EI",-n.ei,""]);
+  rows.push(["Take-home",n.net,"tot"]);
+  const tb=document.createElement("table"); tb.className="taxt";
+  for(const [k,v,c] of rows){const tr=document.createElement("tr"); if(c) tr.className=c; const a=document.createElement("td"); a.textContent=k; const b=document.createElement("td"); b.className="n"; b.textContent=(v<0?"− ":"")+money(Math.abs(v)); tr.append(a,b); tb.append(tr);}
+  B.append(tb);
+  const keep=document.createElement("p"); keep.className="hint"; keep.textContent=gross>0?"You keep about "+Math.round(n.net/gross*100)+"¢ of each dollar of this overtime. Your stub's withholding can differ; the difference settles at tax time.":""; B.append(keep);
+  B.hidden=false;
+}
+function syncHours(){
+  const ds=$("fDate").value||today(), ty=$("fType").value, st=$("fStart").value, en=$("fEnd").value;
+  const ps=(ty==="callback"||ty==="callhome")?preShiftHours(ds,st,settings.sched,settings.shift):null;
+  if(ps!=null&&st){$("fHours").value=Math.round(ps*100)/100;}
+  else{const sp=shiftSplit(ds,st,en,settings.sched,settings.shift); if(sp){$("fHours").value=Math.round(sp.outside*100)/100;}}
+  updatePreview();
+}
+function setComp(v){document.querySelectorAll('input[name="comp"]').forEach(r=>r.checked=r.value===v);}
+function resetForm(){
+  { const o=$("fType").querySelector('option[value="ot"]'); o.disabled=false; o.textContent="Overtime"; }
+  $("otForm").classList.remove("viewmode"); $("addMore").hidden=true;
+  editingId=null; $("formTitle").textContent="Log time"; $("saveBtn").textContent="Save"; $("sheetDelete").hidden=true; delete $("sheetDelete").dataset.armed; $("sheetDelete").textContent="Delete";
+  $("sheetDelSeries").hidden=true; delete $("sheetDelSeries").dataset.armed; $("sheetDelSeries").textContent="Delete this and later repeats"; $("ocRepeatBox").hidden=false; $("ocRepeat").value="0"; $("ocUntil").value=""; $("cancelEdit").hidden=true; $("confirmBox").hidden=true;
+  $("fType").value="ot"; $("fDate").value=today(); $("fStart").value=""; $("fEnd").value=""; $("fHours").value=""; $("fRecalled").checked=false; setOcLevel("OA"); $("ocStart").value=""; $("ocEnd").value=""; setComp("cash"); $("fNote").value=""; $("formErr").hidden=true; setMode(); updatePreview(); renderCal();
+}
+function startEdit(id){
+  const e=entries[id]; if(!e)return; editingId=id;
+  $("fType").value=e.type||"ot"; $("fDate").value=e.date; $("fStart").value=e.start||""; $("fEnd").value=e.end||""; $("fHours").value=e.hours; $("fRecalled").checked=e.recalled!=null?!!e.recalled:(e.mult==2&&autoRate(e.date,false,settings.sched,settings.shift).mult!==2); calMonth=e.date.slice(0,7); setComp(e.comp||"cash"); $("fNote").value=e.note||"";
+  if(e.type==="oncall"){setOcLevel(e.level||"OA");$("ocStart").value=e.ocStart||"";$("ocEnd").value=e.ocEnd||"";} setMode();
+  $("confirmBox").hidden=!e.confirmed; $("fStub").value=e.stubDate||""; $("fPaid").value=e.paid!=null?e.paid:"";
+  $("formTitle").textContent="Edit entry"; $("saveBtn").textContent="Save changes"; $("cancelEdit").hidden=false;
+  setViewMode(false); lockOtOption(); $("formTitle").textContent="Edit entry"; $("sheetDelete").hidden=false; $("ocRepeatBox").hidden=true; $("sheetDelSeries").hidden=!e.seriesId; repeatHint(); renderDayHas(); updatePreview(); renderCal(); showSheet();
+}
+["fStart","fEnd"].forEach(id=>$(id).addEventListener("change",syncHours));
+$("fHours").addEventListener("input",updatePreview);
+$("fType").addEventListener("change",()=>{ if($("fStart").value) syncHours(); });
+$("fType").addEventListener("change",()=>{ if($("fType").value==="oncall") fillOcWindow($("fDate").value||today()); setMode(); updatePreview(); });
+["ocStart","ocEnd"].forEach(id=>$(id).addEventListener("change",()=>{ if($("ocStart").value){$("fDate").value=$("ocStart").value.slice(0,10);calMonth=$("fDate").value.slice(0,7);renderCal();sheetDateTxt();} updatePreview(); }));
+document.querySelectorAll('input[name="ocl"]').forEach(r=>r.addEventListener("change",updatePreview));
+["ocRepeat","ocUntil","ocStart","ocEnd"].forEach(id=>$(id).addEventListener("change",()=>{repeatHint();renderCal();}));
+$("sheetDelSeries").onclick=async()=>{
+  const b=$("sheetDelSeries"), cur=entries[editingId]; if(!cur||!cur.seriesId) return;
+  if(!b.dataset.armed){b.dataset.armed="1";b.textContent="Tap again to delete this and later repeats";return;}
+  const ids=Object.values(entries).filter(e=>e.seriesId===cur.seriesId&&e.date>=cur.date).map(e=>e.id), old=ids.map(id=>entries[id]);
+  ids.forEach(id=>delete entries[id]); closeSheet(); render();
+  try{for(const id of ids) await store.remove(id); flash("Deleted "+ids.length+" on-call period"+(ids.length===1?"":"s"));}
+  catch(x){old.forEach(e=>entries[e.id]=e);render();flash("Couldn't delete. Try again.",true);}
+};
+$("fRecalled").addEventListener("change",updatePreview);
+$("fPaid").addEventListener("input",updatePreview);
+document.querySelectorAll('input[name="comp"]').forEach(r=>r.addEventListener("change",updatePreview));
+$("cancelEdit").onclick=()=>closeSheet();
+$("sheetClose").onclick=()=>closeSheet();
+$("sheet").addEventListener("close",()=>{ resetForm(); renderCal(); });
+$("sheet").addEventListener("click",ev=>{ if(ev.target===$("sheet")){ const r=$("sheet").getBoundingClientRect(); if(ev.clientY<r.top||ev.clientY>r.bottom||ev.clientX<r.left||ev.clientX>r.right) closeSheet(); } });
+$("logToday").onclick=()=>openSheet(today());
+$("addMore").onclick=()=>{ setViewMode(false); lockOtOption(); renderDayHas(); $("fType").focus(); };
+$("sheetDelete").onclick=()=>{const b=$("sheetDelete"); if(!editingId)return; if(b.dataset.armed){const id=editingId; closeSheet(); removeEntry(id);} else {b.dataset.armed="1"; b.textContent="Tap again to delete";}};
+function showSheet(){const d=$("sheet"); if(!d.open){ try{d.showModal();}catch(x){d.setAttribute("open","");} } d.scrollTop=0;}
+function closeSheet(){const d=$("sheet"); if(d.open) d.close(); resetForm(); renderCal();}
+/* One Overtime entry per day: callbacks, court and on call can still be added alongside it. */
+function existingOT(ds){return Object.values(entries).find(e=>e.type==="ot"&&e.date===ds&&e.id!==editingId);}
+function lockOtOption(){
+  const ex=existingOT($("fDate").value), o=$("fType").querySelector('option[value="ot"]');
+  o.disabled=!!ex; o.textContent=ex?"Overtime (already logged this day)":"Overtime";
+  if(ex&&$("fType").value==="ot"){ $("fType").value="callback"; $("fStart").value=""; $("fEnd").value=""; $("fHours").value=""; setMode(); updatePreview(); }
+}
+function openSheet(ds){
+  resetForm(); $("fDate").value=ds; calMonth=ds.slice(0,7);
+  if((settings.sched||DEFAULTS.sched)[dowOf(ds)]==="work") $("fStart").value=(settings.shift||DEFAULTS.shift).end;
+  lockOtOption();
+  sheetDateTxt(); renderDayHas(); setViewMode(dayEntries(ds).length>0); updatePreview(); renderCal(); showSheet();
+}
+function sheetDateTxt(){
+  const v=$("fDate").value||today(), d=pd(v), kind=(settings.sched||DEFAULTS.sched)[d.getDay()];
+  const k=kind==="rto"?" · Regular time off":kind==="tow"?" · Time off work":"";
+  $("sheetDate").textContent=($("fType").value==="oncall"?"On call starting ":"")+DAYNAME[d.getDay()]+", "+MON[d.getMonth()]+" "+d.getDate()+", "+d.getFullYear()+k;
+}
+/* Entries already logged on the picked day, so they can be opened from the pop-up. */
+/* Entries already logged on the picked day, shown in full (times, pay, status, notes) with Edit and Confirm. */
+function dayEntries(ds){
+  const d0=toMs(ds+"T00:00"), d1=d0+86400000;
+  return Object.values(entries).filter(e=>e.id!==editingId&&(e.date===ds||(e.type==="oncall"&&e.ocStart&&toMs(e.ocStart)<d1&&toMs(e.ocEnd)>d0)))
+    .sort((x,y)=>(x.ocStart||x.date+"T"+(x.start||"00:00")).localeCompare(y.ocStart||y.date+"T"+(y.start||"00:00")));
+}
+function renderDayHas(){
+  const box=$("dayHas"), ds=$("fDate").value; box.textContent="";
+  const list=dayEntries(ds);
+  box.hidden=!list.length; if(!list.length) return;
+  const h=document.createElement("span"); h.className="label"; h.textContent=editingId?"Also logged this day":"Logged this day"; box.append(h);
+  for(const e of list){
+    const typ=TYPES[e.type]||TYPES.ot, oc=e.type==="oncall", lto=e.comp==="lto", ph=paidHours(e);
+    const card=document.createElement("div"); card.className="dcard"+(oc?" isoc":" isot");
+    const top=document.createElement("div"); top.className="dtop";
+    const nm=document.createElement("strong"); nm.textContent=typ.name+(oc?" ("+(e.level||"OA")+")":"");
+    const tg=document.createElement("span"); tg.className="tag"; tg.textContent=rateTxt(e); nm.append(tg);
+    if(lto){const t2=document.createElement("span");t2.className="tag";t2.textContent="LTO";nm.append(t2);}
+    const amt=document.createElement("span"); amt.className="e-amt"; amt.textContent=lto?"+"+hrU(ltoCredit(e)):money(e.confirmed&&e.paid!=null?e.paid:expected(e));
+    top.append(nm,amt);
+    const tm=document.createElement("div"); tm.className="dtime";
+    tm.textContent=whenTxt(e);
+    const hr=document.createElement("div"); hr.className="e-meta";
+    hr.append(mathBox(e,Object.values(entries)));
+    const st=document.createElement("div"); st.className="e-meta";
+    if(e.confirmed){const ok=document.createElement("span");ok.className="okt";ok.textContent="Confirmed"+(e.stubDate?" on stub "+nice(e.stubDate):"");st.append(ok);}
+    else st.textContent=e.date>today()?"Scheduled":"Waiting for pay stub";
+    card.append(top,tm,hr,st);
+    { const n=netInfo(e); if(n){ const nl=document.createElement("div"); nl.className="e-meta netd"; nl.textContent=netText(n); card.append(nl); } }
+    if(e.note){const nt=document.createElement("div");nt.className="e-note";nt.textContent=e.note;card.append(nt);}
+    else{const nn=document.createElement("div");nn.className="e-meta";nn.textContent="No notes";card.append(nn);}
+    const bx=document.createElement("div"); bx.className="dbtns";
+    const eb=document.createElement("button"); eb.type="button"; eb.textContent="Edit"; eb.onclick=()=>startEdit(e.id);
+    const cb=document.createElement("button"); cb.type="button"; cb.textContent=e.confirmed?"Unconfirm":"Confirm on stub";
+    cb.onclick=()=>askConfirm(e.id,!e.confirmed,renderDayHas);
+    bx.append(eb,cb); card.append(bx); box.append(card);
+  }
+}
+function setViewMode(on){
+  $("otForm").classList.toggle("viewmode",on); $("addMore").hidden=!on;
+  $("formTitle").textContent=on?"Day details":(editingId?"Edit entry":"Log time");
+}
+$("otForm").addEventListener("submit",async ev=>{
+  ev.preventDefault();
+  const err=$("formErr");
+  if($("fType").value==="oncall"){
+    const a=$("ocStart").value,b=$("ocEnd").value;
+    if(!a||!b){err.textContent="Set the on-call start and finish date and time.";err.hidden=false;return;}
+    const wh=windowHours(a,b);
+    if(!(wh>0)){err.textContent="The on-call finish must be after the start.";err.hidden=false;return;}
+    if(wh>24*14){err.textContent="That on-call period is over 14 days. Check the dates.";err.hidden=false;return;}
+    err.hidden=true;
+    const prev=editingId?entries[editingId]:null;
+    const e={id:prev?prev.id:"o"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+      type:"oncall",level:ocLevel(),date:a.slice(0,10),ocStart:a,ocEnd:b,start:null,end:null,hours:Math.round(wh*100)/100,mult:1,recalled:false,
+      comp:comp(),note:$("fNote").value.trim(),rate:prev?prev.rate:settings.rate,created:prev?prev.created:Date.now(),
+      confirmed:prev?!!prev.confirmed:false,stubDate:prev?prev.stubDate||null:null,paid:prev?prev.paid??null:null};
+    if(prev&&prev.confirmed){e.stubDate=$("fStub").value||null; const p=$("fPaid").value; e.paid=p===""?null:Math.round(Number(p)*100)/100;}
+    const every=prev?0:Number($("ocRepeat").value), batch=[e];
+    if(every){
+      e.seriesId="s"+Date.now().toString(36); e.every=every;
+      const occ=occurrences(a,b,every,$("ocUntil").value||a.slice(0,10));
+      occ.slice(1).forEach(([sa,sb],k)=>batch.push({...e,id:e.id+"-"+(k+1),date:sa.slice(0,10),ocStart:sa,ocEnd:sb,created:e.created+k+1}));
+    }
+    batch.forEach(x=>entries[x.id]=x); activeKey=payPeriod(e.date,settings.payStart).start; if(!prev&&filter==="done") filter="wait"; closeSheet(); render();
+    try{for(const x of batch) await store.save(x); flash(prev?"Changes saved":batch.length>1?batch.length+" on-call periods added":"On-call period added");}catch(x){flash("Couldn't save all of them. Check the list and try again.",true);}
+    return;
+  }
+  const h=Number($("fHours").value);
+  if(!$("fDate").value){err.textContent="Pick the date you worked.";err.hidden=false;return;}
+  const dup=$("fType").value==="ot"&&existingOT($("fDate").value);
+  if(dup){ err.textContent="This day already has an Overtime entry. Edit that one instead. "; const ob=document.createElement("button"); ob.type="button"; ob.textContent="Open it"; ob.onclick=()=>startEdit(dup.id); err.append(ob); err.hidden=false; return; }
+  if(!(h>0)||h>24){err.textContent="Enter start and finish times, or type hours between 0.25 and 24.";err.hidden=false;return;}
+  err.hidden=true;
+  const prev=editingId?entries[editingId]:null;
+  const e={id:prev?prev.id:"o"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    type:$("fType").value,date:$("fDate").value,start:$("fStart").value||null,end:$("fEnd").value||null,
+    hours:h,mult:draft().mult,segs:draft().segs,recalled:$("fRecalled").checked,comp:comp(),note:$("fNote").value.trim(),
+    preShift:(["callback","callhome"].includes($("fType").value)&&preShiftHours($("fDate").value,$("fStart").value,settings.sched,settings.shift)!=null),
+    rate:prev?prev.rate:settings.rate,created:prev?prev.created:Date.now(),
+    confirmed:prev?!!prev.confirmed:false,stubDate:prev?prev.stubDate||null:null,paid:prev?prev.paid??null:null};
+  if(prev&&prev.confirmed){e.stubDate=$("fStub").value||null; const p=$("fPaid").value; e.paid=p===""?null:Math.round(Number(p)*100)/100;}
+  entries[e.id]=e; activeKey=payPeriod(e.date,settings.payStart).start; if(!prev&&filter==="done") filter="wait"; closeSheet(); render();
+  try{await store.save(e);flash(prev?"Changes saved":"Entry added");}catch(x){flash("Couldn't save. Try again.",true);}
+});
+async function toggle(id,on,stubDate,paid){
+  const e={...entries[id],confirmed:on,stubDate:on?(stubDate||today()):null,paid:on?(paid!==undefined?paid:entries[id].paid??null):null};
+  entries[id]=e; render();
+  try{await store.save(e);flash(on?"Confirmed on your pay stub":"Moved back to waiting");}catch(x){flash("Couldn't save. Try again.",true);}
+}
+/* Ask before confirming (or un-confirming) an entry against a pay stub. */
+let confPending=null;
+function askConfirm(id,on,after){
+  const e=entries[id]; if(!e) return; confPending={id,on,after};
+  const typ=TYPES[e.type]||TYPES.ot, lto=e.comp==="lto";
+  $("confTitle").textContent=on?(lto?"Confirm lieu time banked?":"Confirm overtime paid?"):"Move back to waiting?";
+  $("confWhat").textContent=nice(e.date)+" · "+typ.name+(e.type==="oncall"?" ("+(e.level||"OA")+")":"")+" · "+(lto?"+"+hrs(ltoCredit(e))+" hrs LTO":money(expected(e)));
+  $("confMsg").textContent=on?(lto?"Check that these hours show in your lieu time bank, then confirm.":"Check that this shows on your pay stub. Add the stub date and, if you like, the amount it paid."):"This removes the confirmation and the stub date and amount saved with it.";
+  $("confFields").hidden=!on; $("confPaid").closest(".field").hidden=lto;
+  $("confStub").value=e.stubDate||today(); $("confPaid").value=e.paid!=null?e.paid:""; $("confPaid").placeholder=lto?"":money(expected(e)).replace(/[^0-9.]/g,"");
+  $("confYes").textContent=on?"Confirm":"Move back to waiting"; $("confYes").classList.toggle("btn-primary",true);
+  const d=$("confDlg"); try{d.showModal();}catch(x){d.setAttribute("open","");}
+}
+function closeConf(){const d=$("confDlg"); if(d.open) d.close(); confPending=null;}
+$("confNo").onclick=closeConf; $("confClose").onclick=closeConf;
+$("confDlg").addEventListener("close",()=>{confPending=null;});
+$("confYes").onclick=async()=>{
+  if(!confPending) return; const {id,on,after}=confPending, pv=$("confPaid").value;
+  const stub=$("confStub").value||today(), paid=pv===""?null:Math.round(Number(pv)*100)/100;
+  closeConf(); await toggle(id,on,stub,paid); if(after) after();
+};
+async function removeEntry(id){
+  const e=entries[id]; delete entries[id]; if(editingId===id)resetForm(); render();
+  try{await store.remove(id);flash("Entry deleted");}catch(x){entries[id]=e;render();flash("Couldn't delete. Try again.",true);}
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{filter=b.dataset.f;render();});
+$("pOlder").onclick=()=>goPeriod(-1); $("pNewer").onclick=()=>goPeriod(1);
+$("list").addEventListener("scroll",()=>{clearTimeout(scrollT);scrollT=setTimeout(()=>{const L=$("list"),i=Math.round(L.scrollLeft/L.clientWidth),c=L.children[i];if(c&&c.dataset.key!==activeKey){activeKey=c.dataset.key;updatePnav();}},80);});
+$("list").addEventListener("keydown",ev=>{if(ev.key==="ArrowLeft"){ev.preventDefault();goPeriod(-1);}if(ev.key==="ArrowRight"){ev.preventDefault();goPeriod(1);}});
+
+/* ---------- calendar ---------- */
+/* Share of [d0,d1) covered by on-call windows, overlaps merged so a day never exceeds 100%. */
+/* Merged on-call segments within one day, as [startFraction, endFraction] of the day (0 = midnight, 1 = next midnight). */
+function coverSegs(wins,d0,d1){
+  const parts=wins.map(([a,z])=>[Math.max(a,d0),Math.min(z,d1)]).filter(([a,z])=>z>a).sort((x,y)=>x[0]-y[0]), out=[];
+  for(const [a,z] of parts){ const l=out[out.length-1]; if(l&&a<=l[1]) l[1]=Math.max(l[1],z); else out.push([a,z]); }
+  return out.map(([a,z])=>[(a-d0)/(d1-d0),(z-d0)/(d1-d0)]);
+}
+function coverFrac(wins,d0,d1){return coverSegs(wins,d0,d1).reduce((t,[a,z])=>t+z-a,0);}
+let calMonth=today().slice(0,7);
+function renderCal(){
+  const [y,m]=calMonth.split("-").map(Number); const first=new Date(y,m-1,1), days=new Date(y,m,0).getDate();
+  $("calTitle").textContent=MON[m-1]+" "+y;
+  const G=$("calGrid"); G.textContent="";
+  for(const d of ["S","M","T","W","T","F","S"]){const h=document.createElement("div");h.className="dow";h.textContent=d;G.append(h);}
+  for(let i=0;i<first.getDay();i++){const b=document.createElement("div");b.className="day blank";G.append(b);}
+  const byDate={}, ocWins=[], otWins=[];
+  for(const e of Object.values(entries)){
+    if(e.type==="oncall"&&e.ocStart&&e.ocEnd) ocWins.push([toMs(e.ocStart),toMs(e.ocEnd)]);
+    else if(e.start&&e.end){ const a=toMs(e.date+"T"+e.start); let z=toMs(e.date+"T"+e.end); if(z<=a) z+=86400000; otWins.push([a,z]); }
+    (byDate[e.date]=byDate[e.date]||[]).push(e);
+  }
+  if($("fType").value==="oncall"&&$("ocStart").value&&$("ocEnd").value&&!editingId) ocWins.push([toMs($("ocStart").value),toMs($("ocEnd").value)]);
+  const sel=$("fDate").value, td=today(), sch=settings.sched||DEFAULTS.sched;
+  for(let d=1;d<=days;d++){
+    const ds=calMonth+"-"+String(d).padStart(2,"0"), dow=new Date(y,m-1,d).getDay(), kind=sch[dow];
+    const b=document.createElement("button"); b.type="button"; const ps=payPeriod(ds,settings.payStart).start===ds;
+    const d0=toMs(ds+"T00:00"), d1=d0+86400000, ocFrac=coverFrac(ocWins,d0,d1), isOc=ocFrac>0;
+    b.className="day "+kind+(ds===sel?" sel":"")+(ds===td?" today":"")+(ps?" pstart":"")+(isOc?" oc":"");
+    if(kind==="work"){ const sh=settings.shift||DEFAULTS.shift, sb=document.createElement("i"); sb.className="shiftband"; sb.style.left=(mins(sh.start)/14.4)+"%"; sb.style.width=((mins(sh.end)-mins(sh.start))/14.4)+"%"; b.append(sb); if(mins(sh.start)<=605&&mins(sh.end)>=835) b.classList.add("shiftmid"); }
+    if(isOc){ const segs=coverSegs(ocWins,d0,d1);
+      if(segs.some(([a,z])=>a<=0.42&&z>=0.58)) b.classList.add("ocfull");
+      for(const [a,z] of segs){ const g=document.createElement("i"); g.className="gauge"; g.style.left=(a*100)+"%"; g.style.width=((z-a)*100)+"%"; b.append(g); } }
+    const otSegs=coverSegs(otWins,d0,d1);
+    if(otSegs.length){ b.classList.add("otd"); for(const [a,z] of otSegs){ const g=document.createElement("i"); g.className="gauge ot"; g.style.left=(a*100)+"%"; g.style.width=((z-a)*100)+"%"; b.append(g); } }
+    const n=document.createElement("span"); n.className="dn"; n.textContent=d; b.append(n);
+    if(kind!=="work"){const r=document.createElement("span"); r.className="rt"; r.textContent=kind==="rto"?"2×":"TOW"; b.append(r);}
+    const list=byDate[ds]||[]; let lbl=DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"");
+    if(list.length){const tot=list.reduce((t,e)=>t+paidHours(e),0), allOk=list.every(e=>e.confirmed);
+      const c=document.createElement("span"); c.className="eh"+(allOk?" ok":""); c.textContent=hrs(tot)+"hr"; b.append(c);
+      lbl+=", "+hrs(tot)+" hours logged"+(allOk?", confirmed":"");}
+    b.setAttribute("aria-label",lbl); b.setAttribute("aria-pressed",String(ds===sel));
+    b.onclick=()=>openSheet(ds);
+    G.append(b);
+  }
+}
+function shiftMonth(n){const [y,m]=calMonth.split("-").map(Number);const d=new Date(y,m-1+n,1);calMonth=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");renderCal();}
+$("calPrev").onclick=()=>shiftMonth(-1); $("calNext").onclick=()=>shiftMonth(1);
+
+/* ---------- schedule editor (settings) ---------- */
+let schedDraft=[...DEFAULTS.sched];
+const KIND_NEXT={work:"tow",tow:"rto",rto:"work"}, KIND_TXT={work:"Work",tow:"TOW",rto:"RTO"};
+function renderSched(){
+  const S=$("sched"); S.textContent="";
+  schedDraft.forEach((k,i)=>{const b=document.createElement("button"); b.type="button"; b.className="k-"+k;
+    b.textContent=DAYNAME[i].slice(0,3); const sm=document.createElement("small"); sm.textContent=KIND_TXT[k]; b.append(sm);
+    b.setAttribute("aria-label",DAYNAME[i]+": "+KIND_TXT[k]+". Tap to change.");
+    b.onclick=()=>{schedDraft[i]=KIND_NEXT[k]; renderSched();}; S.append(b);});
+}
+
+/* ---------- settings ---------- */
+function payHint(){const v=$("sPayStart").value||DEFAULTS.payStart, c=payPeriod(today(),v), n=ppNumber(today(),v,Number($("sPpNum").value)-ppNumber(today(),v,0)||0);
+  const [y,m,d]=c.end.split("-").map(Number), nx=payPeriod(new Date(Date.UTC(y,m-1,d+1)).toISOString().slice(0,10),v);
+  $("payHint").textContent="Pay periods repeat every 14 days. Current: PP "+n+", "+shortD(c.start)+" – "+shortD(c.end)+". Next: PP "+(ppNumber(nx.start,v,Number($("sPpNum").value)-ppNumber(today(),v,0)||0))+", "+shortD(nx.start)+" – "+shortD(nx.end)+". PP 1 is the first pay period ending in January.";}
+$("sPayStart").addEventListener("change",payHint); $("sPpNum").addEventListener("input",payHint);
+function fillSettings(){const sh=settings.shift||DEFAULTS.shift;$("sShiftStart").value=sh.start;$("sShiftEnd").value=sh.end;$("sRate").value=settings.rate;$("sLtoOt").value=(settings.ltoStart||{}).ot||0;$("sLtoOc").value=(settings.ltoStart||{}).oc||0;$("sLtoAsOf").value=settings.ltoAsOf||today();$("sSalary").value=settings.salary??DEFAULTS.salary;$("sTaxBase").value=settings.taxBase??DEFAULTS.taxBase;$("sCpp").checked=settings.payCpp??DEFAULTS.payCpp;$("sEi").checked=settings.payEi??DEFAULTS.payEi;$("sCur").value=settings.currency;$("sPayStart").value=settings.payStart||DEFAULTS.payStart;$("sPpNum").value=ppNo(today());payHint();schedDraft=[...(settings.sched||DEFAULTS.sched)];renderSched();}
+$("setForm").addEventListener("submit",async ev=>{
+  ev.preventDefault();
+  settings={ltoStart:{ot:Math.max(0,Number($("sLtoOt").value)||0),oc:Math.max(0,Number($("sLtoOc").value)||0)},ltoAsOf:$("sLtoAsOf").value||today(),salary:Math.max(0,Number($("sSalary").value)||0),taxBase:Math.max(0,Number($("sTaxBase").value)||0),payCpp:$("sCpp").checked,payEi:$("sEi").checked,rate:Math.max(0,Number($("sRate").value)||0),currency:$("sCur").value||"$",sched:[...schedDraft],payStart:$("sPayStart").value||DEFAULTS.payStart,ppOffset:(Number($("sPpNum").value)||0)-ppNumber(today(),$("sPayStart").value||DEFAULTS.payStart,0),shift:{start:$("sShiftStart").value||DEFAULTS.shift.start,end:$("sShiftEnd").value||DEFAULTS.shift.end}}; render(); updatePreview();
+  try{await store.saveSettings(settings);flash("Settings saved");}catch(x){flash("Couldn't save settings. Try again.",true);}
+});
+
+let flashT; function flash(msg,bad){const s=$("status");s.textContent=msg;s.style.color=bad?"var(--bad)":"";clearTimeout(flashT);flashT=setTimeout(()=>{s.textContent=store?store.label:"";s.style.color="";},3500);}
+
+/* ---------- storage: your account, with a this-browser fallback ---------- */
+function localStore(){
+  const K="ot-tracker-v2";
+  const read=()=>{try{return JSON.parse(localStorage.getItem(K))||{};}catch(x){return {};}};
+  const write=o=>{try{localStorage.setItem(K,JSON.stringify(o));}catch(x){}};
+  return {label:"Saved in this browser only",load:()=>read(),
+    async save(e){const o=read();o.entries=o.entries||{};o.entries[e.id]={...e,v:APP_VERSION};write(o);},
+    async remove(id){const o=read();if(o.entries)delete o.entries[id];write(o);},
+    async saveSettings(s){const o=read();o.settings={...s,schema:DATA_SCHEMA,appVersion:APP_VERSION};write(o);}};
+}
+function renderVersion(){
+  $("verChip").textContent="v"+APP_VERSION;
+  const cur=CHANGELOG[0]; $("aboutLine").textContent="Overtime Tracker v"+APP_VERSION+" · released "+nice(cur.date)+", "+cur.date.slice(0,4)+" · data format "+DATA_SCHEMA;
+  const C=$("changelog"); C.textContent="";
+  for(const r of CHANGELOG){
+    const box=document.createElement("div"); box.className="rel";
+    const h=document.createElement("div"); h.className="rh";
+    const v=document.createElement("span"); v.className="rv"; v.textContent="v"+r.v;
+    const k=document.createElement("span"); k.className="kind "+r.kind; k.textContent=r.kind;
+    const d=document.createElement("span"); d.className="small"; d.textContent=nice(r.date)+", "+r.date.slice(0,4);
+    h.append(v,k,d); const ul=document.createElement("ul"); for(const n of r.notes){const li=document.createElement("li");li.textContent=n;ul.append(li);}
+    box.append(h,ul); C.append(box);
+  }
+  let seen=null; try{seen=localStorage.getItem("ot-seen-version");}catch(x){}
+  if(seen&&seen!==APP_VERSION){ $("updText").textContent="Updated to v"+APP_VERSION+" ("+cur.kind+")."; $("updBanner").hidden=false; }
+  try{localStorage.setItem("ot-seen-version",APP_VERSION);}catch(x){}
+}
+function openAbout(){ $("updBanner").hidden=true; const a=$("aboutBox"); a.open=true; a.scrollIntoView({behavior:"smooth",block:"start"}); }
+$("verChip").onclick=openAbout; $("updSee").onclick=openAbout; $("updX").onclick=()=>{$("updBanner").hidden=true;};
+async function init(){
+  renderVersion(); fillSettings(); resetForm(); render();
+  let db=null,uid=null;
+  try{if(window.claude?.use){const [d,u]=await Promise.all([claude.use("db"),claude.use("user")]);db=d;uid=u?await u.id():null;}}catch(x){}
+  if(db&&uid){
+    const base=db.doc("data/users/"+uid+"/profile"), col=base.collection("overtime");
+    store={label:"Saved to your account",save:e=>col.doc(e.id).set({...e,v:APP_VERSION}),remove:id=>col.doc(id).delete(),saveSettings:s=>base.set({settings:{...s,schema:DATA_SCHEMA,appVersion:APP_VERSION}})};
+    const timer=setTimeout(()=>{$("status").textContent="Can't reach your saved entries yet. Still trying…";},10000);
+    base.get().then(sn=>{const st=sn.exists&&sn.data().settings;if(st){settings={...DEFAULTS,...migrateSettings(st)};fillSettings();updatePreview();render();}}).catch(()=>{});
+    col.onSnapshot(sn=>{
+      const next={}; for(const d of sn.docs){const v=d.data(); if(v&&v.date) next[d.id]=migrateEntry({...v,id:d.id});}
+      entries=next; render();
+      if(!sn.metadata.fromCache){clearTimeout(timer);$("status").textContent=store.label;}
+    },()=>{clearTimeout(timer);$("status").textContent="Couldn't load your entries. Reload to try again.";});
+  }else{
+    store=localStore(); const o=store.load(); if(o.settings)settings={...DEFAULTS,...migrateSettings(o.settings)}; entries=Object.fromEntries(Object.entries(o.entries||{}).map(([k,v])=>[k,migrateEntry(v)]));
+    fillSettings(); updatePreview(); render(); $("status").textContent=store.label;
+  }
+}
+init();
+</script>
+
+<script>
+/* Offline support: lets the installed app open without a connection. */
+if("serviceWorker" in navigator){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }); }
+</script>
+</body>
+</html>
