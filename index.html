@@ -19,7 +19,7 @@
 :root{
   --bg:#eef1f4; --surface:#ffffff; --ink:#1b2430; --muted:#5d6b7a; --line:#d5dbe2;
   --accent:#e0601b; --accent-ink:#ffffff; --accent-soft:#fbe6da;
-  --ok:#2f7d4f; --ok-soft:#dcefe3; --bad:#b02a4a; --oc:#1f6fd1; --oc-ink:#ffffff; --otc:#c62828; --cl:#7b3fbf; --work:#2e8b57; --work-soft:#dff2e6; --work-ink:#ffffff;
+  --ok:#2f7d4f; --ok-soft:#dcefe3; --bad:#b02a4a; --oc:#1f6fd1; --oc-ink:#ffffff; --otc:#c62828; --cl:#7b3fbf; --vac:#0e8f9c; --work:#2e8b57; --work-soft:#dff2e6; --work-ink:#ffffff;
   --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -27,11 +27,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#12171d; --surface:#1b222b; --ink:#e7ecf1; --muted:#97a4b2; --line:#2e3844;
   --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2418;
-  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}}
+  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --vac:#33c6cf; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#12171d; --surface:#1b222b; --ink:#e7ecf1; --muted:#97a4b2; --line:#2e3844;
   --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2418;
-  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}
+  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --vac:#33c6cf; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45}
@@ -143,6 +143,28 @@ details.settings>summary{cursor:pointer;padding:14px 16px;font-family:var(--f-di
 .day.pstart::before{content:"";position:absolute;left:4px;right:4px;top:-1px;height:3px;border-radius:2px;background:var(--ink)}
 .day{overflow:hidden}
 .day>span{position:relative;z-index:1}
+.day .vacfill{position:absolute;inset:0;background:var(--vac);z-index:0;pointer-events:none}
+.day.vacd .dn,.day.vacd .rt{background:var(--surface);color:var(--ink);border-radius:4px;padding:0 4px;line-height:1.25}
+.vacbody{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
+.vacfy{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.vacfy strong{font-size:.98rem;text-align:center}
+.vacfy button{min-width:44px}
+.vbar{position:relative;height:26px;border-radius:13px;background:color-mix(in srgb,var(--vac) 16%,var(--surface));border:1px solid var(--vac);overflow:hidden}
+.vbar .vfill{position:absolute;left:0;top:0;bottom:0;background:var(--vac)}
+.vbar .ptext{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-family:var(--f-mono);font-size:.8rem;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.vbar.over{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 16%,var(--surface))}
+.vhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.vfoot{font-size:.82rem;color:var(--muted)}
+.vfoot.over{color:var(--bad);font-weight:700}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vgrid .full{grid-column:1/-1}
+.vrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px dashed var(--line);font-size:.92rem}
+.vrow .vtxt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;text-align:left}
+.vrow .vtxt small{color:var(--muted)}
+.vrow .vbtns{display:flex;gap:6px;flex:none}
+.vrow button{min-height:32px;padding:2px 10px;font-size:.8rem}
+.vrow::before{content:"";flex:none;width:10px;height:10px;border-radius:3px;background:var(--vac)}
+#vacSum{margin-left:10px;font-family:var(--f-mono);font-size:.8rem;font-weight:600;text-transform:none;letter-spacing:0;color:var(--vac)}
 .day .shiftband{position:absolute;top:0;bottom:0;background:var(--work);z-index:0;pointer-events:none}
 .day.work .dn,.day.oc .dn,.day.otd .dn{background:var(--surface);color:var(--ink);border-radius:4px;padding:0 4px;line-height:1.25}
 .day .gauge.ot{background:var(--otc);z-index:0}
@@ -428,7 +450,7 @@ details.settings[open]>summary::after{content:"－"}
         <div class="cal" aria-label="Calendar">
           <div class="calhead"><button type="button" id="calPrev" aria-label="Previous month">‹</button><strong id="calTitle">—</strong><button type="button" id="calNext" aria-label="Next month">›</button></div>
           <div class="calgrid" id="calGrid"></div>
-          <div class="callegend"><span><i class="sw" style="background:var(--accent-soft);border:1px solid var(--accent)"></i>RTO, paid 2×</span><span><i class="sw" style="background:var(--ink)"></i>Pay period starts</span><span><i class="sw" style="background:var(--work)"></i>Your shift</span><span><i class="sw" style="background:var(--otc)"></i>Overtime</span><span><i class="sw" style="background:var(--oc)"></i>On call</span><span><b style="color:var(--cl);font-size:.8rem">$</b> Travel expenses</span><span><i class="sw" style="background:var(--accent)"></i>Waiting (hrs)</span><span><i class="sw" style="background:var(--ok)"></i>Confirmed</span></div>
+          <div class="callegend"><span><i class="sw" style="background:var(--accent-soft);border:1px solid var(--accent)"></i>RTO, paid 2×</span><span><i class="sw" style="background:var(--ink)"></i>Pay period starts</span><span><i class="sw" style="background:var(--work)"></i>Your shift</span><span><i class="sw" style="background:var(--otc)"></i>Overtime</span><span><i class="sw" style="background:var(--oc)"></i>On call</span><span><i class="sw" style="background:var(--vac)"></i>Vacation</span><span><b style="color:var(--cl);font-size:.8rem">$</b> Travel expenses</span><span><i class="sw" style="background:var(--accent)"></i>Waiting (hrs)</span><span><i class="sw" style="background:var(--ok)"></i>Confirmed</span></div>
         </div>    </div>
     <div class="calfoot"><button type="button" class="btn-primary" id="logToday">Log time for today</button></div>
   </section>
@@ -608,6 +630,27 @@ details.settings[open]>summary::after{content:"－"}
       <p class="hint">Your hourly rate is your annual salary ÷ 2,087.04. Your stub shows $5,277.41 for 80 hours, which matches Sgt. Step 2 ($137,677), so $65.97 an hour. Change this when you get a raise. Entries you already logged keep the rate they were saved with.</p>
       <div class="field full"><button type="submit" class="btn-primary">Save settings</button></div>
     </form>
+  </details>
+
+  <details class="card settings" id="vacBox">
+    <summary>Vacation<span id="vacSum"></span></summary>
+    <div class="vacbody">
+      <div class="vacfy"><button type="button" id="vacPrev" aria-label="Previous vacation year">‹</button><strong id="vacFy"></strong><button type="button" id="vacNext" aria-label="Next vacation year">›</button></div>
+      <div id="vacBank"></div>
+      <div class="field"><label for="vacAllot">Vacation hours for this year</label><input type="number" id="vacAllot" inputmode="decimal" min="0" step="0.25"></div>
+      <p class="hint">Vacation years run April 1 to March 31. Each year starts at 400 hrs; change it here if a year has a different amount (carry-over, for example).</p>
+      <span class="label" id="vacFormLbl">Log vacation</span>
+      <div class="vgrid">
+        <div class="field"><label for="vacFrom">First day</label><input type="date" id="vacFrom"></div>
+        <div class="field"><label for="vacTo">Last day</label><input type="date" id="vacTo"></div>
+        <div class="field"><label for="vacHrs">Hours</label><input type="number" id="vacHrs" inputmode="decimal" min="0.25" step="0.25"></div>
+        <div class="field"><label for="vacNote">Note</label><input type="text" id="vacNote" maxlength="120" placeholder="optional"></div>
+      </div>
+      <p class="hint" id="vacHint">Hours fill in from your work days in those dates (10 hrs each). Change them for a partial day.</p>
+      <p class="formerr" id="vacErr" hidden></p>
+      <div class="actions"><button type="button" class="btn-primary" id="vacSave">Log vacation</button><button type="button" id="vacCancel" hidden>Cancel edit</button></div>
+      <div id="vacList"></div>
+    </div>
   </details>
 
   <details class="card settings" id="backupBox">
@@ -823,15 +866,16 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.14.3";
+const APP_VERSION="2.15.0";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.15.0",date:"2026-11-08",kind:"minor",notes:[
+    "New Vacation section (below Settings): log vacation days and see a progress bar of hours left, starting at 400 hrs each April 1 – March 31 year.",
+    "Vacation days show in teal on the calendar."]},
   {v:"2.14.3",date:"2026-11-08",kind:"patch",notes:[
     "Travel expenses aren't tied to pay periods: no PP label, and in Confirmed and All they have their own list below the pay period cards."]},
   {v:"2.14.2",date:"2026-11-08",kind:"patch",notes:[
-    "Every dollar entry box shows a $ in front: meal amounts, hotel totals, other expenses, amount on stub and the dollar settings."]},
-  {v:"2.14.1",date:"2026-11-08",kind:"patch",notes:[
-    "Trips have one accommodation line (hotel total or private nights) instead of one per night; + Add accommodation for a second hotel. Trips saved the old way convert automatically."]}
+    "Every dollar entry box shows a $ in front: meal amounts, hotel totals, other expenses, amount on stub and the dollar settings."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -953,7 +997,8 @@ const nEntries=n=>n+" "+(n===1?"entry":"entries");
 const comp=()=>document.querySelector('input[name="comp"]:checked').value;
 
 /* Lieu time used ("ltouse") records live with the entries (so backups include them) but never count as work. */
-const workEntries=()=>Object.values(entries).filter(e=>e.type!=="ltouse"&&e.type!=="claim");
+const workEntries=()=>Object.values(entries).filter(e=>e.type!=="ltouse"&&e.type!=="claim"&&e.type!=="vac");
+const vacEntries=()=>Object.values(entries).filter(e=>e.type==="vac");
 const claimEntries=()=>Object.values(entries).filter(e=>e.type==="claim");
 /* Dollar amount of any entry: claims add up their parts; work uses pay (or the stub amount once confirmed). */
 const xp=e=>e.type==="claim"?claimTotal(e):expected(e);
@@ -987,7 +1032,7 @@ function netInfo(e){
 function netText(n){ if(!n) return ""; const parts=["federal tax "+money(n.fed),"BC tax "+money(n.bc)]; if(n.cpp) parts.push("CPP "+money(n.cpp)); if(n.ei) parts.push("EI "+money(n.ei)); return "Take-home ≈ "+money(n.net)+" ("+parts.join(", ")+")"; }
 const sumNet=list=>list.reduce((t,x)=>{const n=netInfo(x);return t+(n?n.net:0);},0);
 function render(){
-  renderRateWarn();
+  renderRateWarn(); renderVac();
   renderCal();
   const cp=payPeriod(today(),settings.payStart);
   $("rateLine").textContent="Hourly rate "+money(settings.rate)+" · Pay period "+ppNo(cp.start)+" ("+shortD(cp.start)+" – "+shortD(cp.end)+")";
@@ -1454,6 +1499,7 @@ function renderCal(){
   for(const d of ["S","M","T","W","T","F","S"]){const h=document.createElement("div");h.className="dow";h.textContent=d;G.append(h);}
   for(let i=0;i<first.getDay();i++){const b=document.createElement("div");b.className="day blank";G.append(b);}
   const clDates=new Set(claimEntries().map(e=>e.date)), tripDates=new Set(claimEntries().filter(e=>e.trip).flatMap(e=>dateRange(e.date,e.endDate||e.date)));
+  const vacDates=new Set(vacEntries().flatMap(vacDays));
   const byDate={}, ocWins=[], otWins=[];
   for(const e of workEntries()){
     if(e.type==="oncall"&&e.ocStart&&e.ocEnd) ocWins.push([toMs(e.ocStart),toMs(e.ocEnd)]);
@@ -1467,7 +1513,9 @@ function renderCal(){
     const b=document.createElement("button"); b.type="button"; const ps=payPeriod(ds,settings.payStart).start===ds;
     const d0=toMs(ds+"T00:00"), d1=d0+86400000, ocFrac=coverFrac(ocWins,d0,d1), isOc=ocFrac>0;
     b.className="day "+kind+(ds===sel?" sel":"")+(ds===td?" today":"")+(ps?" pstart":"")+(isOc?" oc":"");
-    if(kind==="work"){ const sh=settings.shift||DEFAULTS.shift, sb=document.createElement("i"); sb.className="shiftband"; sb.style.left=(mins(sh.start)/14.4)+"%"; sb.style.width=((mins(sh.end)-mins(sh.start))/14.4)+"%"; b.append(sb); if(mins(sh.start)<=605&&mins(sh.end)>=835) b.classList.add("shiftmid"); }
+    const isVac=vacDates.has(ds);
+    if(isVac){ b.classList.add("vacd"); const vf=document.createElement("i"); vf.className="vacfill"; b.append(vf); }
+    else if(kind==="work"){ const sh=settings.shift||DEFAULTS.shift, sb=document.createElement("i"); sb.className="shiftband"; sb.style.left=(mins(sh.start)/14.4)+"%"; sb.style.width=((mins(sh.end)-mins(sh.start))/14.4)+"%"; b.append(sb); if(mins(sh.start)<=605&&mins(sh.end)>=835) b.classList.add("shiftmid"); }
     if(isOc){ const segs=coverSegs(ocWins,d0,d1);
       if(segs.some(([a,z])=>a<=0.42&&z>=0.58)) b.classList.add("ocfull");
       for(const [a,z] of segs){ const g=document.createElement("i"); g.className="gauge"; g.style.left=(a*100)+"%"; g.style.width=((z-a)*100)+"%"; b.append(g); } }
@@ -1477,7 +1525,7 @@ function renderCal(){
     if(kind!=="work"){const r=document.createElement("span"); r.className="rt"; r.textContent=kind==="rto"?"2×":"TOW"; b.append(r);}
     if(clDates.has(ds)){ const cm=document.createElement("span"); cm.className="clmark"; cm.textContent="$"; b.append(cm); }
     if(tripDates.has(ds)){ const tb=document.createElement("i"); tb.className="tripband"; b.append(tb); }
-    const list=byDate[ds]||[]; let lbl=(clDates.has(ds)?"travel expenses, ":"")+DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"");
+    const list=byDate[ds]||[]; let lbl=(clDates.has(ds)?"travel expenses, ":"")+DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"")+(isVac?", vacation":"");
     if(list.length){const tot=list.reduce((t,e)=>t+paidHours(e),0), allOk=list.every(e=>e.confirmed);
       const c=document.createElement("span"); c.className="eh"+(allOk?" ok":""); c.textContent=hrs(tot)+"hr"; b.append(c);
       lbl+=", "+hrs(tot)+" hours logged"+(allOk?", confirmed":"");}
@@ -1509,7 +1557,7 @@ for(const id of ["sOcSDay","sOcEDay"]) DAYNAME.forEach((n,i)=>$(id).add(new Opti
 function fillSettings(){ setTimeout(()=>formatMoneyBoxes($("setForm")),0); { const W=ocDefaults(); $("sOcSDay").value=String(W.sDay); $("sOcSTime").value=W.sTime; $("sOcEDay").value=String(W.eDay); $("sOcETime").value=W.eTime; } { const c=claimRates(); $("sClB").value=c.b; $("sClL").value=c.l; $("sClD").value=c.d; $("sClInc").value=c.inc; $("sClKm").value=c.km; $("sClPriv").value=c.priv; $("sClAsOf").value=c.asOf; }const sh=settings.shift||DEFAULTS.shift;$("sShiftStart").value=sh.start;$("sShiftEnd").value=sh.end;$("sRate").value=settings.rate;$("sLtoOt").value=(settings.ltoStart||{}).ot||0;$("sLtoOc").value=(settings.ltoStart||{}).oc||0;$("sLtoAsOf").value=settings.ltoAsOf||today();$("sSalary").value=settings.salary??DEFAULTS.salary;$("sTaxBase").value=settings.taxBase??DEFAULTS.taxBase;$("sCpp").checked=settings.payCpp??DEFAULTS.payCpp;$("sEi").checked=settings.payEi??DEFAULTS.payEi;$("sCur").value=settings.currency;$("sPayStart").value=settings.payStart||DEFAULTS.payStart;$("sPpNum").value=ppNo(today());payHint();schedDraft=[...(settings.sched||DEFAULTS.sched)];renderSched();}
 $("setForm").addEventListener("submit",async ev=>{
   ev.preventDefault();
-  settings={ocDefault:{sDay:Number($("sOcSDay").value),sTime:$("sOcSTime").value,eDay:Number($("sOcEDay").value),eTime:$("sOcETime").value},claims:{b:Number($("sClB").value)||0,l:Number($("sClL").value)||0,d:Number($("sClD").value)||0,inc:Number($("sClInc").value)||0,km:Number($("sClKm").value)||0,priv:Number($("sClPriv").value)||0,asOf:$("sClAsOf").value||DEFAULTS.claims.asOf},ltoStart:{ot:Math.max(0,Number($("sLtoOt").value)||0),oc:Math.max(0,Number($("sLtoOc").value)||0)},ltoAsOf:$("sLtoAsOf").value||today(),salary:Math.max(0,Number($("sSalary").value)||0),taxBase:Math.max(0,Number($("sTaxBase").value)||0),payCpp:$("sCpp").checked,payEi:$("sEi").checked,rate:Math.max(0,Number($("sRate").value)||0),currency:$("sCur").value||"$",sched:[...schedDraft],payStart:$("sPayStart").value||DEFAULTS.payStart,ppOffset:(Number($("sPpNum").value)||0)-ppNumber(today(),$("sPayStart").value||DEFAULTS.payStart,0),shift:{start:$("sShiftStart").value||DEFAULTS.shift.start,end:$("sShiftEnd").value||DEFAULTS.shift.end}}; render(); updatePreview();
+  settings={vacAllot:settings.vacAllot||{},ocDefault:{sDay:Number($("sOcSDay").value),sTime:$("sOcSTime").value,eDay:Number($("sOcEDay").value),eTime:$("sOcETime").value},claims:{b:Number($("sClB").value)||0,l:Number($("sClL").value)||0,d:Number($("sClD").value)||0,inc:Number($("sClInc").value)||0,km:Number($("sClKm").value)||0,priv:Number($("sClPriv").value)||0,asOf:$("sClAsOf").value||DEFAULTS.claims.asOf},ltoStart:{ot:Math.max(0,Number($("sLtoOt").value)||0),oc:Math.max(0,Number($("sLtoOc").value)||0)},ltoAsOf:$("sLtoAsOf").value||today(),salary:Math.max(0,Number($("sSalary").value)||0),taxBase:Math.max(0,Number($("sTaxBase").value)||0),payCpp:$("sCpp").checked,payEi:$("sEi").checked,rate:Math.max(0,Number($("sRate").value)||0),currency:$("sCur").value||"$",sched:[...schedDraft],payStart:$("sPayStart").value||DEFAULTS.payStart,ppOffset:(Number($("sPpNum").value)||0)-ppNumber(today(),$("sPayStart").value||DEFAULTS.payStart,0),shift:{start:$("sShiftStart").value||DEFAULTS.shift.start,end:$("sShiftEnd").value||DEFAULTS.shift.end}}; render(); updatePreview();
   try{await store.saveSettings(settings);flash("Settings saved");}catch(x){flash("Couldn't save settings. Try again.",true);}
 });
 
@@ -1725,6 +1773,87 @@ $("ltoSave").onclick=async()=>{
   const u={id:"u"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:"ltouse",bank:k,date:d,hours:h,note:$("ltoNote").value.trim(),created:Date.now()};
   entries[u.id]=u; render(); closeLto();
   try{await store.save(u); flash(hrU(h)+" taken from "+(k==="ot"?"Overtime LTO":"OA LTO"));}catch(x){delete entries[u.id];render();flash("Couldn't save. Try again.",true);}
+};
+
+/* ---------- vacation (years run Apr 1 to Mar 31) ---------- */
+const VAC_DEFAULT=400;
+const fyOf=ds=>{const [y,m]=ds.split("-").map(Number); return m>=4?y:y-1;};
+const fyStart=y=>y+"-04-01", fyEnd=y=>(y+1)+"-03-31";
+const shiftHrs=()=>{const sh=settings.shift||DEFAULTS.shift; let d=mins(sh.end)-mins(sh.start); if(d<=0) d+=1440; return d/60;};
+/* Days in a vacation entry that count: your scheduled work days. */
+function vacDays(e){ const sch=settings.sched||DEFAULTS.sched; return dateRange(e.date,e.endDate||e.date).filter(d=>sch[pd(d).getDay()]==="work"); }
+const vacAllot=y=>{const v=(settings.vacAllot||{})[y]; return v!=null&&v!==""?Number(v):VAC_DEFAULT;};
+const vacUsed=y=>vacEntries().filter(e=>fyOf(e.date)===y).reduce((t,e)=>t+(Number(e.hours)||0),0);
+let vacFy=fyOf(today()), vacEditId=null;
+function renderVac(){
+  const y=vacFy, al=vacAllot(y), used=vacUsed(y), left=al-used, over=left<0;
+  const cur=fyOf(today()); $("vacSum").textContent=hrs(vacAllot(cur)-vacUsed(cur))+" hrs left";
+  $("vacFy").textContent="Apr 1, "+y+" – Mar 31, "+(y+1);
+  if(document.activeElement!==$("vacAllot")) $("vacAllot").value=al;
+  const B=$("vacBank"); B.textContent="";
+  const head=document.createElement("div"); head.className="vhead";
+  const nm=document.createElement("span"); nm.className="label"; nm.textContent="Vacation left";
+  const val=document.createElement("span"); val.className="num bval"; val.textContent=hrs(left)+" / "+hrs(al)+" hrs"; head.append(nm,val);
+  const bar=document.createElement("div"); bar.className="vbar"+(over?" over":""); bar.setAttribute("role","progressbar");
+  bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax",String(al)); bar.setAttribute("aria-valuenow",String(Math.max(0,Math.round(left*100)/100))); bar.setAttribute("aria-label","Vacation left: "+hrs(left)+" of "+hrs(al)+" hours");
+  const f=document.createElement("span"); f.className="vfill"; f.style.width=(al>0?Math.min(100,Math.max(0,left/al*100)):0)+"%";
+  const tx=document.createElement("span"); tx.className="ptext"; tx.textContent=hrs(Math.max(0,left))+" hrs"; bar.append(f,tx);
+  const foot=document.createElement("div"); foot.className="vfoot"+(over?" over":""); const sh=shiftHrs();
+  foot.textContent=over?"Over by "+hrU(-left)+". Check your entries, or raise this year's hours below."
+    :hrU(used)+" used"+(used?" (≈ "+hrs(Math.round(used/sh*100)/100)+" days)":"")+" · ≈ "+hrs(Math.round(left/sh*100)/100)+" days left at "+hrs(sh)+" hrs a day";
+  B.append(head,bar,foot);
+  $("vacPrev").disabled=false;
+  const L=$("vacList"); L.textContent="";
+  const list=vacEntries().filter(e=>fyOf(e.date)===y).sort((a,b)=>b.date.localeCompare(a.date));
+  const h=document.createElement("span"); h.className="label"; h.textContent=list.length?"Logged this year ("+list.length+")":"Nothing logged this year yet."; L.append(h);
+  for(const e of list){
+    const r=document.createElement("div"); r.className="vrow";
+    const t=document.createElement("div"); t.className="vtxt"; const a=document.createElement("strong");
+    a.textContent=nice(e.date)+(e.endDate&&e.endDate!==e.date?" – "+nice(e.endDate):"")+" · "+hrU(Number(e.hours)||0);
+    t.append(a); if(e.note){const n=document.createElement("small"); n.textContent=e.note; t.append(n);}
+    const bx=document.createElement("div"); bx.className="vbtns";
+    const ed=document.createElement("button"); ed.type="button"; ed.textContent="Edit"; ed.onclick=()=>vacEdit(e);
+    const d=document.createElement("button"); d.type="button"; d.className="danger"; d.textContent="Delete";
+    d.onclick=async()=>{ if(!d.dataset.armed){d.dataset.armed="1";d.textContent="Sure?";return;} delete entries[e.id]; if(vacEditId===e.id) vacReset(); render();
+      try{await store.remove(e.id);flash("Vacation entry deleted");}catch(x){entries[e.id]=e;render();flash("Couldn't delete. Try again.",true);} };
+    bx.append(ed,d); r.append(t,bx); L.append(r);
+  }
+}
+function vacAuto(){
+  if($("vacHrs").dataset.touched) return;
+  const a=$("vacFrom").value, b=$("vacTo").value||a; if(!a) return;
+  const n=vacDays({date:a,endDate:b<a?a:b}).length; $("vacHrs").value=n?Math.round(n*shiftHrs()*100)/100:"";
+  $("vacHint").textContent=n?n+" work day"+(n===1?"":"s")+" × "+hrs(shiftHrs())+" hrs = "+hrU(n*shiftHrs())+". Change the hours for a partial day.":"No work days in those dates. Enter hours if you still want to log some.";
+}
+function vacReset(){ vacEditId=null; for(const id of ["vacFrom","vacTo","vacHrs","vacNote"]) $(id).value=""; delete $("vacHrs").dataset.touched;
+  $("vacErr").hidden=true; $("vacSave").textContent="Log vacation"; $("vacFormLbl").textContent="Log vacation"; $("vacCancel").hidden=true;
+  $("vacHint").textContent="Hours fill in from your work days in those dates ("+hrs(shiftHrs())+" hrs each). Change them for a partial day."; }
+function vacEdit(e){ vacEditId=e.id; $("vacFrom").value=e.date; $("vacTo").value=e.endDate||e.date; $("vacHrs").value=e.hours; $("vacHrs").dataset.touched="1"; $("vacNote").value=e.note||"";
+  $("vacSave").textContent="Save changes"; $("vacFormLbl").textContent="Edit vacation"; $("vacCancel").hidden=false; $("vacErr").hidden=true; $("vacFrom").focus(); }
+$("vacFrom").addEventListener("change",()=>{ const a=$("vacFrom").value; if(a&&(!$("vacTo").value||$("vacTo").value<a)) $("vacTo").value=a; vacAuto(); });
+$("vacTo").addEventListener("change",vacAuto);
+$("vacHrs").addEventListener("input",()=>{$("vacHrs").dataset.touched="1";});
+$("vacCancel").onclick=vacReset;
+$("vacPrev").onclick=()=>{vacFy--;renderVac();}; $("vacNext").onclick=()=>{vacFy++;renderVac();};
+$("vacAllot").addEventListener("change",async()=>{
+  const v=Number($("vacAllot").value); if(!(v>=0)){renderVac();return;}
+  settings={...settings,vacAllot:{...(settings.vacAllot||{}),[vacFy]:Math.round(v*100)/100}}; renderVac();
+  try{await store.saveSettings(settings);flash("Vacation hours for "+vacFy+"–"+String(vacFy+1).slice(2)+" saved");}catch(x){flash("Couldn't save. Try again.",true);}
+});
+$("vacSave").onclick=async()=>{
+  const a=$("vacFrom").value, b=$("vacTo").value||a, h=Math.round((Number($("vacHrs").value)||0)*100)/100, err=$("vacErr");
+  const bad=m=>{err.textContent=m;err.hidden=false;};
+  if(!a) return bad("Pick the first day of your vacation.");
+  if(b<a) return bad("The last day is before the first day.");
+  if(fyOf(a)!==fyOf(b)) return bad("These dates cross April 1. Log the days before and after April 1 separately, since they come from different vacation years.");
+  if(!(h>0)) return bad("Enter the vacation hours, for example 10.");
+  const mine=new Set(dateRange(a,b)), clash=vacEntries().filter(e=>e.id!==vacEditId).flatMap(e=>dateRange(e.date,e.endDate||e.date)).filter(d=>mine.has(d)).sort()[0];
+  if(clash) return bad("Vacation is already logged on "+nice(clash)+". Edit that entry instead.");
+  err.hidden=true;
+  const old=vacEditId?entries[vacEditId]:null;
+  const u={...(old||{}),id:vacEditId||"v"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:"vac",date:a,endDate:b,hours:h,note:$("vacNote").value.trim(),created:old?old.created:Date.now()};
+  entries[u.id]=u; vacFy=fyOf(a); const wasEdit=!!old; vacReset(); render();
+  try{await store.save(u); flash(wasEdit?"Vacation updated":hrU(h)+" of vacation logged");}catch(x){if(old)entries[u.id]=old;else delete entries[u.id];render();flash("Couldn't save. Try again.",true);}
 };
 
 /* ---------- backup & restore ---------- */
