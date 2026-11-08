@@ -19,7 +19,7 @@
 :root{
   --bg:#eef1f4; --surface:#ffffff; --ink:#1b2430; --muted:#5d6b7a; --line:#d5dbe2;
   --accent:#e0601b; --accent-ink:#ffffff; --accent-soft:#fbe6da;
-  --ok:#2f7d4f; --ok-soft:#dcefe3; --bad:#b02a4a; --oc:#1f6fd1; --oc-ink:#ffffff; --otc:#c62828; --cl:#7b3fbf; --vac:#0e8f9c; --work:#2e8b57; --work-soft:#dff2e6; --work-ink:#ffffff;
+  --ok:#2f7d4f; --ok-soft:#dcefe3; --bad:#b02a4a; --oc:#1f6fd1; --oc-ink:#ffffff; --otc:#c62828; --cl:#7b3fbf; --vac:#0e8f9c; --bb:#c2257a; --work:#2e8b57; --work-soft:#dff2e6; --work-ink:#ffffff;
   --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -27,11 +27,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#12171d; --surface:#1b222b; --ink:#e7ecf1; --muted:#97a4b2; --line:#2e3844;
   --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2418;
-  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --vac:#33c6cf; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}}
+  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --vac:#33c6cf; --bb:#ff6fb5; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#12171d; --surface:#1b222b; --ink:#e7ecf1; --muted:#97a4b2; --line:#2e3844;
   --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2418;
-  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --vac:#33c6cf; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}
+  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --vac:#33c6cf; --bb:#ff6fb5; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45}
@@ -152,6 +152,10 @@ details.settings>summary{cursor:pointer;padding:14px 16px;font-family:var(--f-di
 .day.pstart::before{content:"";position:absolute;left:4px;right:4px;top:-1px;height:3px;border-radius:2px;background:var(--ink)}
 .day{overflow:hidden}
 .day>span{position:relative;z-index:1}
+.day .vacfill.bbfill{background:repeating-linear-gradient(135deg,var(--bb) 0 6px,color-mix(in srgb,var(--bb) 45%,var(--surface)) 6px 12px)}
+.sw.bbsw{background:repeating-linear-gradient(135deg,var(--bb) 0 3px,color-mix(in srgb,var(--bb) 45%,var(--surface)) 3px 6px)}
+.tag.bbt{border-color:var(--bb);color:var(--bb)}
+.pbar .seg.bb{background:#ff6fb5}
 .day .vacfill{position:absolute;inset:0;background:var(--vac);z-index:0;pointer-events:none}
 .day.vacd .dn,.day.vacd .rt{background:var(--surface);color:var(--ink);border-radius:4px;padding:0 4px;line-height:1.25}
 .vacbody{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
@@ -186,7 +190,7 @@ details.settings>summary{cursor:pointer;padding:14px 16px;font-family:var(--f-di
 .vrow .vbtns{display:flex;gap:6px;flex:none}
 .vrow button{min-height:32px;padding:2px 10px;font-size:.8rem}
 .vrow::before{content:"";flex:none;width:10px;height:10px;border-radius:3px;background:var(--vac)}
-#vacSum{margin-left:10px;font-family:var(--f-mono);font-size:.8rem;font-weight:600;text-transform:none;letter-spacing:0;color:var(--vac)}
+#vacSum{display:block;margin:4px 0 0;font-family:var(--f-mono);font-size:.8rem;font-weight:600;text-transform:none;letter-spacing:0;color:var(--vac)}
 .day .shiftband{position:absolute;top:0;bottom:0;background:var(--work);z-index:0;pointer-events:none}
 .day.work .dn,.day.oc .dn,.day.otd .dn{background:var(--surface);color:var(--ink);border-radius:4px;padding:0 4px;line-height:1.25}
 .day .gauge.ot{background:var(--otc);z-index:0}
@@ -344,6 +348,13 @@ select.tgrey:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(1)}
 .orow input[type=text],.orow input[type=number]{width:100%;min-height:42px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-width:0}
 .orow .ckline{grid-column:1/-1;font-size:.88rem}
 .orow .odel{min-height:42px;min-width:42px;padding:0;border-radius:50%}
+.njcinfo{border:1px solid var(--cl);border-radius:12px;background:color-mix(in srgb,var(--cl) 6%,var(--surface))}
+.njcinfo>summary{cursor:pointer;padding:10px 12px;font-weight:700;color:var(--cl);list-style:none;display:flex;align-items:center;gap:8px}
+.njcinfo>summary::-webkit-details-marker{display:none}
+.njcinfo .ib{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid var(--cl);display:inline-grid;place-items:center;font-size:.75rem;font-weight:800;font-style:italic;font-family:Georgia,serif}
+.njcbody{padding:0 12px 12px;font-size:.88rem;display:flex;flex-direction:column;gap:6px}
+.njcbody p,.njcbody ul{margin:0}.njcbody ul{padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.clwarn{color:var(--bad)!important}
 .addexp{align-self:flex-start;border:1px dashed var(--cl);color:var(--cl);background:none;font-weight:700}
 .capnote{color:var(--accent);font-size:.82rem;margin:0}
 .rstat{grid-column:2/-1;font-size:.82rem;font-weight:700;color:var(--ok)}
@@ -355,6 +366,10 @@ select.tgrey:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(1)}
 .mathbox.iscl{border-left-color:var(--cl)}
 .tag.cll{border-color:var(--cl);color:var(--cl)}
 .wsec.wcl .ptitle::before{background:var(--cl)}
+.wsec.wbb .ptitle::before{background:var(--bb)}
+.bbact{padding:10px 16px 14px}
+.mathbox.isbb{border-left-color:var(--bb)}
+.bbact .btn-primary{background:var(--bb);color:#fff;box-shadow:none}
 .wrow.cl span:first-child::before{background:var(--cl)}
 .ratewarn{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-radius:14px;background:var(--accent-soft);color:var(--ink);font-size:.9rem;box-shadow:var(--shadow)}
 .ratewarn span{flex:1;min-width:0}
@@ -406,6 +421,17 @@ button{border-radius:10px;transition:background-color .15s,border-color .15s,box
 .hero .small,.hero .netl{color:var(--hero-muted)}
 .hero .wrow,.hero .num{color:var(--hero-ink)}
 .hero .wrow.cl span:first-child::before{background:#c4a1ff}
+.banks{display:flex;flex-direction:column;gap:14px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.bankslbl{color:var(--ink)!important;font-size:.8rem}
+#vacBox .pbar{background:color-mix(in srgb,var(--ink) 10%,var(--surface))}
+#vacBox .pbar .tick{background:color-mix(in srgb,var(--ink) 25%,transparent)}
+#vacBox .bfoot{color:var(--muted)}
+#vacBox .bank .ptext{display:none}
+.vgrid.vstart{grid-template-columns:1fr}
+#vacBox>summary{position:relative;padding-right:44px}
+#vacBox>summary::after{position:absolute;right:16px;top:14px;float:none}
+#vacBox .usebtn{color:var(--accent)}
+#vacBox .bank .label{color:var(--muted)}
 .bank{display:flex;flex-direction:column;gap:6px;align-items:stretch!important;flex-wrap:nowrap!important}
 .bhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .bval{font-size:.98rem;font-weight:600;white-space:nowrap}
@@ -474,8 +500,6 @@ details.settings[open]>summary::after{content:"－"}
     <div><div class="label">Waiting for pay stub</div><div class="big wait" id="wAmt">$0.00</div><div class="netl" id="wNet"></div><div class="small" id="wHrs">0 entries</div></div>
     <div><div class="label">Confirmed <span id="yrLbl"></span> YTD</div><div class="big done" id="cAmt">$0.00</div><div class="netl" id="cNet"></div><div class="small" id="cHrs">0 entries</div></div>
     <div class="wsplit" id="wSplit" aria-label="Waiting for pay stub, by type"></div>
-    <div class="lto bank" id="bankOt" aria-label="Overtime LTO bank"></div>
-    <div class="lto bank" id="bankOc" aria-label="OA LTO bank"></div>
   </section>
   </div>
 
@@ -485,7 +509,7 @@ details.settings[open]>summary::after{content:"－"}
         <div class="cal" aria-label="Calendar">
           <div class="calhead"><button type="button" id="calPrev" aria-label="Previous month">‹</button><strong id="calTitle">—</strong><button type="button" id="calNext" aria-label="Next month">›</button></div>
           <div class="calgrid" id="calGrid"></div>
-          <div class="callegend"><span><i class="sw" style="background:var(--accent-soft);border:1px solid var(--accent)"></i>RTO, paid 2×</span><span><i class="sw" style="background:var(--ink)"></i>Pay period starts</span><span><i class="sw" style="background:var(--work)"></i>Your shift</span><span><i class="sw" style="background:var(--otc)"></i>Overtime</span><span><i class="sw" style="background:var(--oc)"></i>On call</span><span><i class="sw" style="background:var(--vac)"></i>Vacation</span><span><b style="color:var(--cl);font-size:.8rem">$</b> Travel expenses</span><span><i class="sw" style="background:var(--accent)"></i>Waiting (hrs)</span><span><i class="sw" style="background:var(--ok)"></i>Confirmed</span></div>
+          <div class="callegend"><span><i class="sw" style="background:var(--accent-soft);border:1px solid var(--accent)"></i>RTO, paid 2×</span><span><i class="sw" style="background:var(--ink)"></i>Pay period starts</span><span><i class="sw" style="background:var(--work)"></i>Your shift</span><span><i class="sw" style="background:var(--otc)"></i>Overtime</span><span><i class="sw" style="background:var(--oc)"></i>On call</span><span><i class="sw" style="background:var(--vac)"></i>Vacation</span><span><i class="sw bbsw"></i>Black book day</span><span><b style="color:var(--cl);font-size:.8rem">$</b> Travel expenses</span><span><i class="sw" style="background:var(--accent)"></i>Waiting (hrs)</span><span><i class="sw" style="background:var(--ok)"></i>Confirmed</span></div>
         </div>    </div>
     <div class="calfoot"><button type="button" class="btn-primary" id="logToday">Log time for today</button></div>
   </section>
@@ -550,11 +574,26 @@ details.settings[open]>summary::after{content:"－"}
         <button type="button" class="addexp" id="clAddOther">+ Add expense</button>
         <div class="cltotal" id="clTotal" aria-live="polite"></div>
         <p class="hint" id="clRateNote"></p>
+        <p class="hint clwarn" id="clIncWarn" hidden>Incidentals are normally paid only for overnight travel (NJC Travel Directive 3.2.7 and 3.3.7). For a single day, check before claiming.</p>
+        <details class="njcinfo">
+          <summary><span class="ib" aria-hidden="true">i</span> When can I claim meals and incidentals?</summary>
+          <div class="njcbody">
+            <p><b>No clock times.</b> You can claim breakfast, lunch or dinner if you're on travel status when that meal would usually be eaten, or when it's reasonable to eat. Each meal is claimed on its own (NJC Travel Directive 3.2.9 and 3.3.9).</p>
+            <p><b>More than 16 km from your workplace</b> (outside your headquarters area):</p>
+            <ul><li><b>Day trip, home the same day:</b> full meal allowance for each meal, no receipts. <b>No incidentals</b> (3.2.7).</li>
+              <li><b>Overnight trip:</b> full meal allowances, plus <b>incidentals for each day or part day</b> (3.3.7).</li>
+              <li><b>31+ days at one place:</b> meals and incidentals drop to 75%; meals drop to 50% from day 121 (when apartment hotels are nearby or you choose private accommodation).</li></ul>
+            <p><b>Within 16 km</b> (headquarters area): meals aren't normally paid. The exception is <b>receipted</b> meals, up to the regular rate and excluding alcohol, for example when you're <b>required to work through or past normal meal hours</b> at extra cost (3.1.9). No incidentals unless an overnight stay was authorized.</p>
+            <p><b>Meal provided?</b> You can't claim the allowance for it. If you paid to top it up, claim the receipt up to the rate.</p>
+            <p class="small">The 16 km is measured by the most direct, safe and practical road. Your collective agreement points to the NJC Travel Directive for meals (7.01, 27.01(f)). RCMP travel policy may add its own rules; your travel coordinator has the final say.</p>
+          </div>
+        </details>
       </div>
       <div class="field full compf"><span class="label" id="compLbl">Paid as</span>
         <div class="seg" role="radiogroup" aria-labelledby="compLbl">
           <label><input type="radio" name="comp" value="cash" checked>Cash</label>
           <label><input type="radio" name="comp" value="lto">Lieu time (LTO)</label>
+          <label><input type="radio" name="comp" value="bb">Black book</label>
         </div></div>
       <div class="field full"><label for="fNote">Notes</label><textarea id="fNote" rows="3" maxlength="1000" placeholder="What was it for? e.g. file #, incident, who approved it, court case"></textarea></div>
       <div class="confirmbox" id="confirmBox" hidden>
@@ -588,13 +627,14 @@ details.settings[open]>summary::after{content:"－"}
         <div class="seg" role="radiogroup" aria-labelledby="ltoBankLbl">
           <label><input type="radio" name="ltob" value="ot" checked>Overtime LTO</label>
           <label><input type="radio" name="ltob" value="oc">OA LTO</label>
+          <label><input type="radio" name="ltob" value="bb">Black book</label>
         </div></div>
       <div class="confgrid">
         <div class="field"><label for="ltoDate">Date taken</label><input type="date" id="ltoDate"></div>
         <div class="field"><label for="ltoHrs">Hours (regular time)</label><input type="number" id="ltoHrs" inputmode="decimal" min="0.25" step="0.25" placeholder="e.g. 10"></div>
       </div>
       <div class="field"><label for="ltoNote">Note</label><input type="text" id="ltoNote" maxlength="120" placeholder="optional, e.g. day off Dec 24"></div>
-      <p class="hint">Banked hours are already converted to regular time (4 hrs at 2× went in as 8 hrs), so enter the regular hours you're taking off.</p>
+      <p class="hint" id="ltoHint">Banked hours are already converted to regular time (4 hrs at 2× went in as 8 hrs), so enter the regular hours you're taking off.</p>
       <p class="formerr" id="ltoErr" hidden></p>
       <div class="actions"><button type="button" class="btn-primary" id="ltoSave">Take hours from bank</button><button type="button" id="ltoCancel">Cancel</button></div>
       <div id="ltoHist"></div>
@@ -680,14 +720,21 @@ details.settings[open]>summary::after{content:"－"}
   </details>
 
   <details class="card settings" id="vacBox">
-    <summary>Vacation<span id="vacSum"></span></summary>
+    <summary>Vacation &amp; Banked Hours<span id="vacSum"></span></summary>
     <div class="vacbody">
       <div class="vacfy"><button type="button" id="vacPrev" aria-label="Previous vacation year">‹</button><strong id="vacFy"></strong><button type="button" id="vacNext" aria-label="Next vacation year">›</button></div>
       <div id="vacBank"></div>
+      <div class="banks" aria-label="Banked hours">
+        <span class="label bankslbl">Banked hours</span>
+        <div class="bank" id="bankOt" aria-label="Overtime LTO bank"></div>
+        <div class="bank" id="bankOc" aria-label="OA LTO bank"></div>
+        <div class="bank" id="bankBb" aria-label="Black book bank"></div>
+      </div>
+      <span class="label bankslbl">Vacation settings</span>
       <div class="field"><label for="vacAllot">Vacation hours for this year</label><input type="number" id="vacAllot" inputmode="decimal" min="0" step="0.25"></div>
       <p class="hint">Vacation years run April 1 to March 31. Each year starts at 200 hrs; change it here if a year has a different amount (carry-over, for example).</p>
       <div class="field"><span class="label">Already used some this year?</span>
-        <div class="vgrid">
+        <div class="vgrid vstart">
           <div class="field"><label for="vacLeft">Hours already used</label><input type="number" id="vacLeft" inputmode="decimal" min="0" step="0.25" placeholder="e.g. 174"></div>
           <div class="field"><label for="vacAsOf">As of</label><input type="date" id="vacAsOf"></div>
         </div>
@@ -884,7 +931,7 @@ function occurrences(startDT,endDT,everyWeeks,until){
 function summarize(entries,year,todayStr){
   const s={waitAmt:0,waitLto:0,waitN:0,doneAmt:0,doneLto:0,doneN:0,ltoBank:0,orBank:0,schedAmt:0,schedLto:0,schedN:0};
   for(const e of entries){
-    const lto=e.comp==="lto";
+    const lto=e.comp==="lto"||e.comp==="bb";
     if(e.confirmed){
       if(lto){ if(e.type==="oncall") s.orBank+=ltoCredit(e); else s.ltoBank+=ltoCredit(e); }
       if(!year||(e.stubDate||e.date).slice(0,4)===String(year)){
@@ -914,16 +961,16 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.18.3";
+const APP_VERSION="2.20.0";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
-  {v:"2.18.3",date:"2026-11-08",kind:"patch",notes:[
-    "Date boxes now show dates like Nov-08-2026 instead of your phone's format. Tapping one still opens the phone's date picker."]},
-  {v:"2.18.2",date:"2026-11-08",kind:"patch",notes:[
-    "Fixed: picking On call and then going back to Overtime left the date on the on-call window's Friday instead of the day you tapped.",
-    "Switching to another type and back to Travel expenses keeps what you'd entered."]},
-  {v:"2.18.1",date:"2026-11-08",kind:"patch",notes:[
-    "Fixed: picking On call and then going back to Overtime filled in hours (like 24) from times you hadn't picked."]}
+  {v:"2.20.0",date:"2026-11-09",kind:"minor",notes:[
+    "The Overtime LTO, OA LTO and Black book bank bars moved from the top into the Vacation section, now called Vacation & Banked Hours."]},
+  {v:"2.19.1",date:"2026-11-09",kind:"patch",notes:[
+    "Black book has its own pink colour on the calendar, bank bar and tags, so it doesn't look like waiting (gold) or days off (tan)."]},
+  {v:"2.19.0",date:"2026-11-09",kind:"minor",notes:[
+    "Black book bank: log overtime as Black book (not paid, not in the LTO banks). The hours go into a black book bank you use by picking a day off; those days show striped on the calendar.",
+    "Travel expenses has an info button with the NJC rules for when meals and incidentals can be claimed, and a warning if incidentals are ticked on a single-day claim."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -1011,13 +1058,13 @@ function hm(h){ const q=Math.round(h*4); if(Math.abs(h*4-q)>1e-6) return hrU(h);
 /* Two short lines showing how the pay is worked out, for overtime, callbacks and court. */
 function otMathLines(e){
   /* Line 2 matches the pay stub: hours worked in 15-min blocks at the overtime rate, then the dollars (or hours banked). */
-  const ph=paidHours(e), lto=e.comp==="lto", res=lto?hxU(ph*e.mult)+" banked":money(expected(e));
+  const ph=paidHours(e), lto=e.comp==="lto", res=isBB(e)?hxU(ph*e.mult)+" to black book":lto?hxU(ph*e.mult)+" banked":money(expected(e));
   if(e.segs&&e.segs.length>1) return [ e.segs.map(s=>hm(s.h)+" at "+multTxt(s.mult)).join(" + "), e.segs.map(s=>stubH(s.h)+" at "+multTxt(s.mult)).join(" + ")+" = "+res ];
   const l1=hm(e.hours)+" worked"+(ph!==e.hours?" → "+hm(ph)+(ph>e.hours?" (minimum)":" (15-min blocks)"):"");
   return [ l1, stubH(ph)+" at "+multTxt(e.mult)+" = "+res ];
 }
 function mathBox(e,all){
-  const oc=e.type==="oncall", cl=e.type==="claim", box=document.createElement("div"); box.className="mathbox "+(oc?"isoc":cl?"iscl":"isot");
+  const oc=e.type==="oncall", cl=e.type==="claim", box=document.createElement("div"); box.className="mathbox "+(oc?"isoc":cl?"iscl":isBB(e)?"isbb":"isot");
   for(const ln of (cl?claimLines(e):oc?ocMathLines(e,all):otMathLines(e))){ const d=document.createElement("div"); d.className="ocmath"; d.textContent=ln; box.append(d); }
   return box;
 }
@@ -1076,18 +1123,23 @@ const comp=()=>document.querySelector('input[name="comp"]:checked').value;
 const workEntries=()=>Object.values(entries).filter(e=>e.type!=="ltouse"&&e.type!=="claim"&&e.type!=="vac");
 const vacEntries=()=>Object.values(entries).filter(e=>e.type==="vac");
 const claimEntries=()=>Object.values(entries).filter(e=>e.type==="claim");
+/* Black book: overtime taken as time off on a day you pick, not paid and not in the LTO banks. */
+const isBB=e=>e.comp==="bb"&&e.type!=="claim";
+const isCash=e=>e.comp!=="lto"&&!isBB(e);
+const bbEntries=()=>workEntries().filter(isBB);
 /* Dollar amount of any entry: claims add up their parts; work uses pay (or the stub amount once confirmed). */
 const xp=e=>e.type==="claim"?claimTotal(e):expected(e);
 const amountOf=e=>e.confirmed&&e.paid!=null?e.paid:xp(e);
 const ltoUses=kind=>Object.values(entries).filter(e=>e.type==="ltouse"&&(!kind||e.bank===kind));
 /* What counts as waiting: unconfirmed overtime dated today or earlier, and unconfirmed on call that has started. Used by the list and the top total. */
 function waitingLists(all){
-  const td=today(), now=nowLocal(), un=all.filter(e=>!e.confirmed&&e.type!=="claim");
+  const td=today(), now=nowLocal(), un=all.filter(e=>!e.confirmed&&e.type!=="claim"&&!isBB(e));
   return {ot:un.filter(e=>e.type!=="oncall"&&e.date<=td), oc:un.filter(e=>e.type==="oncall"&&(e.ocStart||e.date)<=now),
           cl:claimEntries().filter(e=>!e.confirmed&&e.date<=td)};
 }
 /* LTO bank = starting balance + confirmed LTO entries dated after the "as of" date (earlier ones are already in the starting balance). */
 function bankBalance(all,kind){
+  if(kind==="bb"){ const earned=all.filter(isBB).reduce((t,e)=>t+ltoCredit(e),0), used=ltoUses("bb").reduce((t,e)=>t+(Number(e.hours)||0),0); return {start:0,earned,used}; }
   const asOf=settings.ltoAsOf||"", start=Number((settings.ltoStart||{})[kind])||0;
   const earned=all.filter(e=>e.confirmed&&e.comp==="lto"&&((kind==="oc")===(e.type==="oncall"))&&(!asOf||e.date>asOf)).reduce((t,e)=>t+ltoCredit(e),0);
   const used=ltoUses(kind).filter(e=>!asOf||e.date>asOf).reduce((t,e)=>t+(Number(e.hours)||0),0);
@@ -1098,9 +1150,9 @@ const grossOf=x=>x.confirmed&&x.paid!=null?x.paid:expected(x);
 const orderKey=x=>x.date+"|"+String(Math.min(x.created||0,9e15)).padStart(16,"0");
 function netInfo(e){
   if(e.type==="claim") return null;   /* reimbursements: no tax estimate */
-  if(e.comp==="lto"||!e.date) return null;
+  if(e.comp==="lto"||isBB(e)||!e.date) return null;
   const y=e.date.slice(0,4), k=orderKey(e); let prior=0;
-  for(const x of workEntries()){ if(x.id===e.id||x.comp==="lto"||!x.date||x.date.slice(0,4)!==y) continue; if(orderKey(x)<k) prior+=grossOf(x); }
+  for(const x of workEntries()){ if(x.id===e.id||!isCash(x)||!x.date||x.date.slice(0,4)!==y) continue; if(orderKey(x)<k) prior+=grossOf(x); }
   const doy=(toMs(e.date+"T00:00")-toMs(y+"-01-01T00:00"))/86400000+1;
   const sal=settings.salary??DEFAULTS.salary, base=settings.taxBase??DEFAULTS.taxBase;
   return deductions(grossOf(e),base+prior,sal*doy/365+prior,{cpp:settings.payCpp??DEFAULTS.payCpp,ei:settings.payEi??DEFAULTS.payEi});
@@ -1117,7 +1169,7 @@ function render(){
   /* Totals: waiting for a pay stub vs confirmed this year (YTD), split into overtime, on call and travel expenses.
      Expenses are reimbursements (not taxed), so the take-home total = pay after tax + expenses. */
   { const W=waitingLists(all), yr0=String(yr), inYr=e=>(e.stubDate||e.date).slice(0,4)===yr0;
-    const cash=l=>l.filter(x=>x.comp!=="lto"), ltoOf=l=>l.filter(x=>x.comp==="lto").reduce((q,x)=>q+ltoCredit(x),0), sum=l=>l.reduce((q,x)=>q+amountOf(x),0);
+    const cash=l=>l.filter(isCash), ltoOf=l=>l.filter(x=>x.comp==="lto").reduce((q,x)=>q+ltoCredit(x),0), sum=l=>l.reduce((q,x)=>q+amountOf(x),0);
     const done=all.filter(e=>e.confirmed&&inYr(e));
     const col=(ot,oc,cl)=>{ const p=sum(cash(ot))+sum(cash(oc)), pn=sumNet(cash([...ot,...oc])), c=sum(cl);
       return {ot:sum(cash(ot)),oc:sum(cash(oc)),otN:ot.length,ocN:oc.length,clN:cl.length,pay:p,payNet:pn,cl:c,tot:p+c,totNet:pn+c,lto:ltoOf([...ot,...oc]),n:ot.length+oc.length+cl.length}; };
@@ -1163,6 +1215,19 @@ function render(){
     foot.append(" ",ub);
     el.append(head,bar,foot);
   }
+  /* Black book bank: hours owed as time off; no cap, no pay stub. */
+  { const B=bankBalance(all,"bb"), tot=B.earned-B.used, el=$("bankBb"); el.textContent=""; el.hidden=!B.earned&&!B.used;
+    if(!el.hidden){ const sh=shiftHrs();
+      const head=document.createElement("div"); head.className="bhead";
+      const nm=document.createElement("span"); nm.className="label"; nm.textContent="Black book bank";
+      const val=document.createElement("span"); val.className="num bval"; val.textContent=hx(tot)+" hrs"; head.append(nm,val);
+      const bar=document.createElement("div"); bar.className="pbar bbbar"; bar.setAttribute("role","progressbar"); bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax",String(sh)); bar.setAttribute("aria-valuenow",String(Math.max(0,tot))); bar.setAttribute("aria-label","Black book bank: "+hx(tot)+" hours, "+hrs(tot/sh)+" of a "+hrs(sh)+"-hour shift");
+      const sg=document.createElement("span"); sg.className="seg bb"; sg.style.width=Math.min(100,Math.max(0,tot/sh*100))+"%"; bar.append(sg);
+      const tx=document.createElement("span"); tx.className="ptext"; tx.textContent=hx(tot)+" hrs"+(tot>=sh?" · "+hrs(Math.floor(tot/sh*100)/100)+" days":""); bar.append(tx);
+      const foot=document.createElement("div"); foot.className="bfoot";
+      foot.textContent=hx(B.earned)+" earned"+(B.used?" − "+hx(B.used)+" used":"")+" · "+(tot>=sh?"enough for a full "+hrs(sh)+"-hr day off":tot>0?hx(sh-tot)+" hrs short of a full "+hrs(sh)+"-hr day":"nothing left to use")+" ";
+      const ub=document.createElement("button"); ub.type="button"; ub.className="usebtn"; ub.textContent="Use hours"; ub.onclick=()=>openLto("bb"); foot.append(ub);
+      el.append(head,bar,foot); } }
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===filter)));
   const L=$("list"); L.textContent=""; $("clList").textContent="";
   const when=x=>x.ocStart||(x.date+"T"+(x.start||"00:00"));
@@ -1176,7 +1241,7 @@ function render(){
       const card=document.createElement("div"); card.className="pcard wsec "+cls;
       const h=document.createElement("div"); h.className="phead";
       const t=document.createElement("div"); t.className="ptitle"; t.textContent=title;
-      const cash=list.filter(x=>x.comp!=="lto"), lto=list.filter(x=>x.comp==="lto"), gn=sumNet(cash);
+      const cash=list.filter(isCash), lto=list.filter(x=>x.comp==="lto"), gn=sumNet(cash);
       const sm=document.createElement("div"); sm.className="num psum";
       sm.textContent=nEntries(list.length)+" · "+money(cash.reduce((q,x)=>q+xp(x),0))+(gn?" (≈ "+money(gn)+" take-home)":"")+(lto.length?" · +"+hrs(lto.reduce((q,x)=>q+ltoCredit(x),0))+" hrs LTO":"");
       h.append(t,sm); card.append(h);
@@ -1187,6 +1252,13 @@ function render(){
     L.append(section("Overtime waiting",otList,"No overtime waiting. Overtime, callbacks and court stay here until you confirm them on a pay stub.","wot"));
     L.append(section("On call waiting",ocList,"No on-call time waiting. On-call periods appear here once they start.","woc"));
     L.append(section("Travel expenses waiting",W.cl,"No travel expenses waiting.","wcl"));
+    { const B=bankBalance(workEntries(),"bb"), left=B.earned-B.used;
+      if(B.earned||B.used){ const card=document.createElement("div"); card.className="pcard wsec wbb";
+        const h=document.createElement("div"); h.className="phead"; const t=document.createElement("div"); t.className="ptitle"; t.textContent="Black book hours to use";
+        const sm=document.createElement("div"); sm.className="num psum"; sm.textContent=hx(left)+" hrs left"+(B.used?" · "+hx(B.used)+" used":""); h.append(t,sm); card.append(h);
+        const ul=document.createElement("ul"); ul.className="list"; bbEntries().sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>ul.append(buildEntry(e,workEntries()))); card.append(ul);
+        const ab=document.createElement("div"); ab.className="bbact"; const ub=document.createElement("button"); ub.type="button"; ub.className="btn-primary"; ub.textContent="Take a black book day"; ub.disabled=left<=0; ub.onclick=()=>openLto("bb"); ab.append(ub); card.append(ab);
+        L.append(card); } }
     if(otFut.length){ const c=section("Scheduled overtime",otFut,"","wfut"); c.querySelector(".psum").textContent="Future dates. They move up once the day arrives."; L.append(c); }
     return;
   }
@@ -1201,7 +1273,7 @@ function render(){
     const h=document.createElement("div"); h.className="phead";
     const a=document.createElement("div"); a.className="ptitle"; a.textContent="PP "+ppNo(pp.start)+" · "+shortD(pp.start)+" – "+shortD(pp.end);
     if(key===cur){const c=document.createElement("span");c.className="tag cur";c.textContent="Current";a.append(c);}
-    const gc=grp.filter(x=>x.comp!=="lto").reduce((t,x)=>t+amountOf(x),0);
+    const gc=grp.filter(isCash).reduce((t,x)=>t+amountOf(x),0);
     const b=document.createElement("div"); b.className="num psum"; const gn=sumNet(grp); b.textContent=hrs(grp.filter(x=>x.type!=="claim").reduce((t,x)=>t+paidHours(x),0))+" hrs · "+money(gc)+(gn?" (≈ "+money(gn)+" take-home)":"")+" · "+nEntries(grp.length);
     h.append(a,b); card.append(h);
     if(!grp.length){const em=document.createElement("div");em.className="empty";em.textContent=emptyMsg;card.append(em);L.append(card);continue;}
@@ -1244,7 +1316,7 @@ function receiptStatus(e){ const P=claimParts(e); if(!P.needR) return null;
   d.textContent=P.missingR?"Receipt missing ("+P.missingR+" of "+P.needR+")":"Receipts ✓ ("+P.needR+")"; return d; }
 function buildEntry(e,all){
   const cl=e.type==="claim";
-    const lto=e.comp==="lto", ph=paidHours(e), typ=TYPES[e.type]||TYPES.ot;
+    const lto=e.comp==="lto"||isBB(e), bb=isBB(e), ph=paidHours(e), typ=TYPES[e.type]||TYPES.ot;
     const li=document.createElement("li"); li.className="entry tap"+(e.confirmed?" done":""); li.tabIndex=0;
     li.setAttribute("aria-label","Open "+nice(e.date)+" "+typ.name+" to edit and see the tax breakdown");
     li.onclick=ev=>{ if(ev.target.closest("button,label.chk,input")) return; startEdit(e.id); };
@@ -1256,12 +1328,13 @@ function buildEntry(e,all){
     const oc=e.type==="oncall";
     const t=document.createElement("div"); t.className="e-top"; t.textContent=nice(e.date)+" · "+(cl?(e.trip?"Travel expenses (trip)":"Travel expenses"):typ.name+(oc?" ("+(e.level||"OA")+")":""));
     const tg=document.createElement("span"); tg.className="tag"+(oc?" ocl":cl?" cll":""); tg.textContent=cl?"NJC":rateTxt(e); t.append(tg);
-    if(lto){const t2=document.createElement("span");t2.className="tag";t2.textContent="LTO";t.append(t2);}
+    if(lto){const t2=document.createElement("span");t2.className="tag"+(bb?" bbt":"");t2.textContent=bb?"Black book":"LTO";t.append(t2);}
     const m=document.createElement("div"); m.className="e-meta";
     m.append(cl?claimSummary(e):"PP "+ppNo(e.date)+" · "+whenTxt(e));
 
     const m2=document.createElement("div"); m2.className="e-meta";
-    if(e.confirmed){
+    if(bb){ m2.append(e.date>today()?"Scheduled · goes to your black book":"In your black book bank"); }
+    else if(e.confirmed){
       const ok=document.createElement("span"); ok.className="okt"; ok.textContent=(lto?(oc?"In on-call LTO bank":"In LTO bank"):"On stub")+(e.stubDate?" "+nice(e.stubDate):""); m2.append(ok);
       if(!lto&&e.paid!=null&&Math.abs(e.paid-xp(e))>=0.01){const d=document.createElement("span");d.className="diff";d.textContent=" · stub "+money(e.paid)+" vs "+money(xp(e))+" expected";m2.append(d);}
     }else if(oc&&e.ocStart&&e.ocStart<=nowLocal()&&e.ocEnd>nowLocal()) m2.append("In progress · ends "+dtShort(e.ocEnd));
@@ -1280,6 +1353,7 @@ function buildEntry(e,all){
     const db=document.createElement("button"); db.type="button"; db.textContent="Delete"; db.className="danger";
     db.onclick=()=>{if(db.dataset.armed){removeEntry(e.id);}else{db.dataset.armed="1";db.textContent="Sure?";setTimeout(()=>{if(db.isConnected){delete db.dataset.armed;db.textContent="Delete";}},3000);}};
     bx.append(eb,db); r.prepend(amt); r.append(bx);
+    if(bb){ chk.style.visibility="hidden"; chk.setAttribute("aria-hidden","true"); cb.disabled=true; }   /* nothing to confirm on a pay stub */
     li.append(chk,main,r);
     li.append(mathBox(e,all));
     if(cl){ const rs=receiptStatus(e); if(rs) li.append(rs); }
@@ -1315,7 +1389,7 @@ function draft(){
 }
 function updatePreview(){
   const P=$("preview"); P.textContent=""; $("taxBox").hidden=true;
-  if($("fType").value==="claim"){ $("formErr").hidden=true; const c=claimDraft(), b=document.createElement("b"); renderClaimTotal(c); b.textContent=money(claimTotal(c));
+  if($("fType").value==="claim"){ $("formErr").hidden=true; $("clIncWarn").hidden=!($("clInc").checked&&(document.querySelector('input[name="clmode"]:checked')||{}).value==="day"); const c=claimDraft(), b=document.createElement("b"); renderClaimTotal(c); b.textContent=money(claimTotal(c));
     P.append("Total ",b," · "+claimLines(c).slice(0,-1).join(" · ")+(claimLines(c).length>1?"":"Tick a meal or incidentals, or enter kilometres or other expenses."));
     const PP=claimParts(c); if(PP.missingR){ const w=document.createElement("span"); w.className="netp"; w.style.color="var(--bad)"; w.textContent="Receipt not ticked for "+PP.missingR+" item"+(PP.missingR===1?"":"s")+"."; P.append(w); }
     return; }
@@ -1325,7 +1399,8 @@ function updatePreview(){
     if(!(d.hours>0)){P.textContent="Set the on-call start and finish.";return;}
     const ded=ocDeduct(d,workEntries()), ph=paidHours(d,workEntries()), lv=OC[d.level], b=document.createElement("b");
     const how=hrs(d.hours)+" hrs on call"+(ded>0?" − "+hrs(ded)+" hrs worked":"")+" ÷ "+lv.div+" = "+hrs(ph)+" hrs at straight time ("+lv.ref+")";
-    if(d.comp==="lto"){b.textContent=hrs(ph)+" hrs on-call LTO";P.append("Earns ",b," · "+how);}
+    if(d.comp==="bb"){b.textContent=hx(ph)+" hrs to black book";P.append("Adds ",b," · "+how);}
+    else if(d.comp==="lto"){b.textContent=hrs(ph)+" hrs on-call LTO";P.append("Earns ",b," · "+how);}
     else{b.textContent=money(expected({...d,hours:d.hours},workEntries()));P.append("Expected pay ",b," · "+how);addNet(P,d);}
     return;
   }
@@ -1335,7 +1410,8 @@ function updatePreview(){
   const sp=timesUsed("fStart","fEnd")?shiftSplit($("fDate").value||today(),$("fStart").value,$("fEnd").value,settings.sched,settings.shift):null;
   if(sp&&sp.inside>0&&!d.preShift) why+=" · "+hm(sp.inside)+" inside your regular shift not counted";
   const b=document.createElement("b");
-  if(d.comp==="lto"){b.textContent=hx(ltoCredit(d))+" hrs LTO"; P.append("Earns ",b," · "+(d.segs?segTxt(d.segs):stubH(ph)+" at "+multTxt(d.mult))+why);}
+  if(d.comp==="bb"){b.textContent=hx(ltoCredit(d))+" hrs to black book"; P.append("Adds ",b," · not paid; take it as time off on a day you pick · "+(d.segs?segTxt(d.segs):stubH(ph)+" at "+multTxt(d.mult))+why);}
+  else if(d.comp==="lto"){b.textContent=hx(ltoCredit(d))+" hrs LTO"; P.append("Earns ",b," · "+(d.segs?segTxt(d.segs):stubH(ph)+" at "+multTxt(d.mult))+why);}
   else{b.textContent=money(expected(d)); P.append("Expected pay ",b," · "+(d.segs?segTxt(d.segs)+" × "+money(d.rate):stubH(ph)+" at "+multTxt(d.mult)+" × "+money(d.rate))+why); addNet(P,d);}
 }
 function addNet(P,d){
@@ -1458,12 +1534,12 @@ function renderDayHas(){
     bx.append(eb,db); card.append(bx); box.append(card);
   }
   for(const e of list){
-    const typ=TYPES[e.type]||TYPES.ot, oc=e.type==="oncall", lto=e.comp==="lto", ph=paidHours(e);
+    const typ=TYPES[e.type]||TYPES.ot, oc=e.type==="oncall", lto=e.comp==="lto"||isBB(e), bb=isBB(e), ph=paidHours(e);
     const card=document.createElement("div"); card.className="dcard"+(oc?" isoc":" isot");
     const top=document.createElement("div"); top.className="dtop";
     const nm=document.createElement("strong"); nm.textContent=e.type==="claim"?(e.trip?"Travel expenses (trip)":"Travel expenses"):typ.name+(oc?" ("+(e.level||"OA")+")":"");
     const tg=document.createElement("span"); tg.className="tag"+(e.type==="claim"?" cll":""); tg.textContent=e.type==="claim"?"NJC":rateTxt(e); nm.append(tg);
-    if(lto){const t2=document.createElement("span");t2.className="tag";t2.textContent="LTO";nm.append(t2);}
+    if(lto){const t2=document.createElement("span");t2.className="tag"+(bb?" bbt":"");t2.textContent=bb?"Black book":"LTO";nm.append(t2);}
     const amt=document.createElement("span"); amt.className="e-amt"; amt.textContent=lto?"+"+hxU(ltoCredit(e)):money(amountOf(e));
     top.append(nm,amt);
     const tm=document.createElement("div"); tm.className="dtime";
@@ -1472,7 +1548,7 @@ function renderDayHas(){
     hr.append(mathBox(e,workEntries())); if(e.type==="claim"){ const rs=receiptStatus(e); if(rs) hr.append(rs); }
     const st=document.createElement("div"); st.className="e-meta";
     if(e.confirmed){const ok=document.createElement("span");ok.className="okt";ok.textContent="Confirmed"+(e.stubDate?" on stub "+nice(e.stubDate):"");st.append(ok);}
-    else st.textContent=e.date>today()?"Scheduled":"Waiting for pay stub";
+    else st.textContent=bb?"In your black book bank":e.date>today()?"Scheduled":"Waiting for pay stub";
     card.append(top,tm,hr,st);
     { const n=netInfo(e); if(n){ const nl=document.createElement("div"); nl.className="e-meta netd"; nl.textContent=netText(n); card.append(nl); } }
     if(e.note){const nt=document.createElement("div");nt.className="e-note";nt.textContent=e.note;card.append(nt);}
@@ -1481,7 +1557,7 @@ function renderDayHas(){
     const eb=document.createElement("button"); eb.type="button"; eb.textContent="Edit"; eb.onclick=()=>startEdit(e.id);
     const cb=document.createElement("button"); cb.type="button"; cb.textContent=e.confirmed?"Unconfirm":"Confirm on stub";
     cb.onclick=()=>askConfirm(e.id,!e.confirmed,renderDayHas);
-    bx.append(eb,cb); card.append(bx); box.append(card);
+    if(bb) cb.hidden=true; bx.append(eb,cb); card.append(bx); box.append(card);
   }
 }
 function setViewMode(on){
@@ -1606,7 +1682,7 @@ function renderCal(){
   for(const d of ["S","M","T","W","T","F","S"]){const h=document.createElement("div");h.className="dow";h.textContent=d;G.append(h);}
   for(let i=0;i<first.getDay();i++){const b=document.createElement("div");b.className="day blank";G.append(b);}
   const clDates=new Set(claimEntries().map(e=>e.date)), tripDates=new Set(claimEntries().filter(e=>e.trip).flatMap(e=>dateRange(e.date,e.endDate||e.date)));
-  const vacDates=new Set(vacEntries().flatMap(vacDays));
+  const vacDates=new Set(vacEntries().flatMap(vacDays)), bbDays={}; for(const u of ltoUses("bb")) bbDays[u.date]=(bbDays[u.date]||0)+(Number(u.hours)||0);
   const byDate={}, ocWins=[], otWins=[];
   for(const e of workEntries()){
     if(e.type==="oncall"&&e.ocStart&&e.ocEnd) ocWins.push([toMs(e.ocStart),toMs(e.ocEnd)]);
@@ -1621,7 +1697,9 @@ function renderCal(){
     const d0=toMs(ds+"T00:00"), d1=d0+86400000, ocFrac=coverFrac(ocWins,d0,d1), isOc=ocFrac>0;
     b.className="day "+kind+(ds===sel?" sel":"")+(ds===td?" today":"")+(ps?" pstart":"")+(isOc?" oc":"");
     const isVac=vacDates.has(ds);
+    const bbH=bbDays[ds]||0;
     if(isVac){ b.classList.add("vacd"); const vf=document.createElement("i"); vf.className="vacfill"; b.append(vf); }
+    else if(bbH){ b.classList.add("vacd","bbd"); const vf=document.createElement("i"); vf.className="vacfill bbfill"; b.append(vf); }
     else if(kind==="work"){ const sh=settings.shift||DEFAULTS.shift, sb=document.createElement("i"); sb.className="shiftband"; sb.style.left=(mins(sh.start)/14.4)+"%"; sb.style.width=((mins(sh.end)-mins(sh.start))/14.4)+"%"; b.append(sb); if(mins(sh.start)<=605&&mins(sh.end)>=835) b.classList.add("shiftmid"); }
     if(isOc){ const segs=coverSegs(ocWins,d0,d1);
       if(segs.some(([a,z])=>a<=0.42&&z>=0.58)) b.classList.add("ocfull");
@@ -1632,7 +1710,7 @@ function renderCal(){
     if(kind!=="work"){const r=document.createElement("span"); r.className="rt"; r.textContent=kind==="rto"?"2×":"TOW"; b.append(r);}
     if(clDates.has(ds)){ const cm=document.createElement("span"); cm.className="clmark"; cm.textContent="$"; b.append(cm); }
     if(tripDates.has(ds)){ const tb=document.createElement("i"); tb.className="tripband"; b.append(tb); }
-    const list=byDate[ds]||[]; let lbl=(clDates.has(ds)?"travel expenses, ":"")+DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"")+(isVac?", vacation":"");
+    const list=byDate[ds]||[]; let lbl=(clDates.has(ds)?"travel expenses, ":"")+DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"")+(isVac?", vacation":"")+(bbH?", black book day off "+hrs(bbH)+" hours":"");
     if(list.length){const tot=list.reduce((t,e)=>t+paidHours(e),0), allOk=list.every(e=>e.confirmed);
       const c=document.createElement("span"); c.className="eh"+(allOk?" ok":""); c.textContent=hm(tot); b.append(c);
       lbl+=", "+hrs(tot)+" hours logged"+(allOk?", confirmed":"");}
@@ -1850,13 +1928,17 @@ function fillClaimForm(e){
 /* ---------- use lieu time (withdraw from a bank) ---------- */
 const ltoKind=()=>document.querySelector('input[name="ltob"]:checked').value;
 function ltoAvail(kind){ const B=bankBalance(workEntries(),kind); return Math.max(0,B.start+B.earned-B.used); }
+const BANKNAME={ot:"Overtime LTO",oc:"OA LTO",bb:"Black book"};
 function renderLto(){
-  const k=ltoKind(); $("ltoBal").textContent=(k==="ot"?"Overtime LTO":"OA LTO")+" balance: "+hxU(ltoAvail(k));
+  const k=ltoKind(); $("ltoBal").textContent=BANKNAME[k]+" balance: "+hxU(ltoAvail(k));
+  $("ltoTitle").textContent=k==="bb"?"Take a black book day":"Use lieu time";
+  $("ltoHint").textContent=k==="bb"?"Pick the day you'll take off and the hours it covers (your shift is "+hrs(shiftHrs())+" hrs). Black book hours aren't paid or put in the LTO banks; this just tracks the time owed to you.":"Banked hours are already converted to regular time (4 hrs at 2× went in as 8 hrs), so enter the regular hours you're taking off.";
+  if(k==="bb"&&!$("ltoHrs").value){ const av=ltoAvail("bb"); if(av>0) $("ltoHrs").value=hx(Math.min(av,shiftHrs())); }
   const H=$("ltoHist"); H.textContent=""; const list=ltoUses().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
   if(!list.length) return;
   const h=document.createElement("span"); h.className="label"; h.textContent="Recently used"; const box=document.createElement("div"); box.className="lhist"; box.append(h);
   for(const u of list){ const r=document.createElement("div"); r.className="lrow"; const t=document.createElement("span");
-    t.textContent=nice(u.date)+" · "+hrU(u.hours)+" from "+(u.bank==="ot"?"Overtime LTO":"OA LTO")+(u.note?" · "+u.note:"");
+    t.textContent=nice(u.date)+" · "+hrU(u.hours)+" from "+(BANKNAME[u.bank]||"LTO")+(u.note?" · "+u.note:"");
     const d=document.createElement("button"); d.type="button"; d.className="danger"; d.textContent="Delete";
     d.onclick=async()=>{ if(!d.dataset.armed){d.dataset.armed="1";d.textContent="Sure?";return;} delete entries[u.id]; render(); renderLto(); try{await store.remove(u.id);flash("Lieu time entry deleted");}catch(x){entries[u.id]=u;render();renderLto();flash("Couldn't delete. Try again.",true);} };
     r.append(t,d); box.append(r); }
@@ -1874,12 +1956,12 @@ $("ltoSave").onclick=async()=>{
   const k=ltoKind(), h=Math.round((Number($("ltoHrs").value)||0)*100)/100, d=$("ltoDate").value, err=$("ltoErr"), av=ltoAvail(k);
   if(!d){err.textContent="Pick the date you took the time off.";err.hidden=false;return;}
   if(!(h>0)){err.textContent="Enter the hours you took, for example 10.";err.hidden=false;return;}
-  if(h>av+1e-9){err.textContent="Only "+hxU(av)+" available in "+(k==="ot"?"Overtime LTO":"OA LTO")+". Check the hours, or update the starting balance in Settings.";err.hidden=false;return;}
-  if(settings.ltoAsOf&&d<=settings.ltoAsOf){err.textContent="That date is on or before your starting-balance date ("+nice(settings.ltoAsOf)+"), so it's already counted in the starting balance.";err.hidden=false;return;}
+  if(h>av+1e-9){err.textContent="Only "+hxU(av)+" available in "+BANKNAME[k]+(k==="bb"?".":". Check the hours, or update the starting balance in Settings.");err.hidden=false;return;}
+  if(k!=="bb"&&settings.ltoAsOf&&d<=settings.ltoAsOf){err.textContent="That date is on or before your starting-balance date ("+nice(settings.ltoAsOf)+"), so it's already counted in the starting balance.";err.hidden=false;return;}
   err.hidden=true;
   const u={id:"u"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:"ltouse",bank:k,date:d,hours:h,note:$("ltoNote").value.trim(),created:Date.now()};
   entries[u.id]=u; render(); closeLto();
-  try{await store.save(u); flash(hrU(h)+" taken from "+(k==="ot"?"Overtime LTO":"OA LTO"));}catch(x){delete entries[u.id];render();flash("Couldn't save. Try again.",true);}
+  try{await store.save(u); flash(hrU(h)+(k==="bb"?" black book day off on "+nice(d):" taken from "+BANKNAME[k]));}catch(x){delete entries[u.id];render();flash("Couldn't save. Try again.",true);}
 };
 
 /* ---------- vacation (years run Apr 1 to Mar 31) ---------- */
