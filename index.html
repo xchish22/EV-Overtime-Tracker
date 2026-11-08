@@ -44,6 +44,15 @@ h2{font-size:1.1rem;letter-spacing:.08em}
 .status{font-size:.8rem;color:var(--muted)}
 .sub{font-size:.9rem;color:var(--muted)}
 button,input,select{font:inherit;color:inherit}
+/* Date boxes show Nov-08-2026: the phone's own text is hidden and our label sits on top (taps still open the phone's date picker). */
+.dwrap{position:relative;display:block;min-width:0}
+.dwrap>input[type=date]{width:100%;color:transparent!important}
+.dwrap>input[type=date]::-webkit-datetime-edit{color:transparent}
+.dwrap>.dshow{position:absolute;left:12px;right:34px;top:50%;transform:translateY(-50%);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.dwrap>.dshow.dempty{color:var(--muted)}
+.dwrap>.dshow{text-align:left}
+.dwrap>input[type=date]::-webkit-datetime-edit-month-field,.dwrap>input[type=date]::-webkit-datetime-edit-day-field,.dwrap>input[type=date]::-webkit-datetime-edit-year-field,.dwrap>input[type=date]::-webkit-datetime-edit-text{color:transparent;background:transparent!important}
+.dwrap>input[type=date]::selection{background:transparent}
 button{cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;min-height:40px}
 button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,label.chk:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 .btn-primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
@@ -905,17 +914,16 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.18.2";
+const APP_VERSION="2.18.3";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.18.3",date:"2026-11-08",kind:"patch",notes:[
+    "Date boxes now show dates like Nov-08-2026 instead of your phone's format. Tapping one still opens the phone's date picker."]},
   {v:"2.18.2",date:"2026-11-08",kind:"patch",notes:[
     "Fixed: picking On call and then going back to Overtime left the date on the on-call window's Friday instead of the day you tapped.",
     "Switching to another type and back to Travel expenses keeps what you'd entered."]},
   {v:"2.18.1",date:"2026-11-08",kind:"patch",notes:[
-    "Fixed: picking On call and then going back to Overtime filled in hours (like 24) from times you hadn't picked."]},
-  {v:"2.18.0",date:"2026-11-08",kind:"minor",notes:[
-    "Totals breakdown: overtime, on call, pay total and after-tax, travel expenses, and total take-home, side by side for Waiting and confirmed this year (YTD).",
-    "The Confirmed total now includes travel expenses."]}
+    "Fixed: picking On call and then going back to Overtime filled in hours (like 24) from times you hadn't picked."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -929,6 +937,21 @@ function migrateEntry(e){
   return o;
 }
 const $=id=>document.getElementById(id);
+/* ---------- date boxes in Nov-08-2026 format ---------- */
+function dateShow(inp){ const sp=inp.parentNode.querySelector(":scope>.dshow"); if(!sp) return; const v=inp.value;
+  sp.textContent=v?dayLbl(v):"Pick a date"; sp.classList.toggle("dempty",!v); }
+function fmtDateBox(inp){
+  if(inp.dataset.fmt) return; inp.dataset.fmt="1";
+  const w=document.createElement("span"); w.className="dwrap"; inp.parentNode.insertBefore(w,inp); w.append(inp);
+  const sp=document.createElement("span"); sp.className="dshow"; sp.setAttribute("aria-hidden","true"); w.append(sp);
+  /* values the app sets in code don't fire events, so update the label whenever .value is set */
+  const d=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value");
+  Object.defineProperty(inp,"value",{configurable:true,get(){return d.get.call(this);},set(v){ d.set.call(this,v); dateShow(this); }});
+  inp.addEventListener("input",()=>dateShow(inp)); inp.addEventListener("change",()=>dateShow(inp));
+  dateShow(inp);
+}
+document.querySelectorAll('input[type=date]').forEach(fmtDateBox);
+new MutationObserver(ms=>{ for(const m of ms) for(const n of m.addedNodes) if(n.nodeType===1){ if(n.matches('input[type=date]')) fmtDateBox(n); n.querySelectorAll&&n.querySelectorAll('input[type=date]').forEach(fmtDateBox); } }).observe(document.body,{childList:true,subtree:true});
 /* Day pop-up state: the day you tapped, whether the travel-expense form was started, and the type before the last switch. */
 let sheetDay=null, claimInit=false, lastType="ot";
 /* ---------- 15-minute time pickers ---------- */
