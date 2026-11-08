@@ -905,17 +905,17 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.18.0";
+const APP_VERSION="2.18.2";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.18.2",date:"2026-11-08",kind:"patch",notes:[
+    "Fixed: picking On call and then going back to Overtime left the date on the on-call window's Friday instead of the day you tapped.",
+    "Switching to another type and back to Travel expenses keeps what you'd entered."]},
+  {v:"2.18.1",date:"2026-11-08",kind:"patch",notes:[
+    "Fixed: picking On call and then going back to Overtime filled in hours (like 24) from times you hadn't picked."]},
   {v:"2.18.0",date:"2026-11-08",kind:"minor",notes:[
     "Totals breakdown: overtime, on call, pay total and after-tax, travel expenses, and total take-home, side by side for Waiting and confirmed this year (YTD).",
-    "The Confirmed total now includes travel expenses."]},
-  {v:"2.17.5",date:"2026-11-08",kind:"patch",notes:[
-    "Overtime pay line now reads like your pay stub: 4.25 hrs at 1.5× = $420.56.",
-    "Lieu time is shown exactly, e.g. 4.25 hrs at 1.5× = 6.375 hrs banked, and the banks no longer round to 2 decimals."]},
-  {v:"2.17.4",date:"2026-11-08",kind:"patch",notes:[
-    "Overtime, callback and court time shows in hours and minutes, like 4h15m (paid in 15-min blocks). On call, pay hours, banks and vacation stay in decimals."]}
+    "The Confirmed total now includes travel expenses."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -929,6 +929,8 @@ function migrateEntry(e){
   return o;
 }
 const $=id=>document.getElementById(id);
+/* Day pop-up state: the day you tapped, whether the travel-expense form was started, and the type before the last switch. */
+let sheetDay=null, claimInit=false, lastType="ot";
 /* ---------- 15-minute time pickers ---------- */
 const tLabel=v=>{let [h,m]=v.split(":").map(Number);const ap=h<12?"am":"pm";h=h%12||12;return h+":"+String(m).padStart(2,"0")+" "+ap;};
 function ensureOpt(sel,v){ if(!v||[...sel.options].some(o=>o.value===v)) return;
@@ -1339,13 +1341,13 @@ function setComp(v){document.querySelectorAll('input[name="comp"]').forEach(r=>r
 function resetForm(){
   { const o=$("fType").querySelector('option[value="ot"]'); o.disabled=false; o.textContent="Overtime"; }
   $("otForm").classList.remove("viewmode"); $("addMore").hidden=true;
-  editingId=null; $("formTitle").textContent="Log time"; $("saveBtn").textContent="Save"; $("sheetDelete").hidden=true; delete $("sheetDelete").dataset.armed; $("sheetDelete").textContent="Delete";
+  editingId=null; delete $("fHours").dataset.typed; claimInit=false; lastType="ot"; $("formTitle").textContent="Log time"; $("saveBtn").textContent="Save"; $("sheetDelete").hidden=true; delete $("sheetDelete").dataset.armed; $("sheetDelete").textContent="Delete";
   $("sheetDelSeries").hidden=true; delete $("sheetDelSeries").dataset.armed; $("sheetDelSeries").textContent="Delete this and later repeats"; $("ocRepeatBox").hidden=false; $("ocRepeat").value="0"; $("ocUntil").value=""; $("cancelEdit").hidden=true; $("confirmBox").hidden=true;
   $("fType").value="ot"; $("fDate").value=today(); $("fStart").value=""; $("fEnd").value=""; $("fHours").value=""; $("fRecalled").checked=false; setOcLevel("OA"); $("ocStart").value=""; $("ocEnd").value=""; fillClaimForm(null); setComp("cash"); $("fNote").value=""; $("formErr").hidden=true; setMode(); updatePreview(); renderCal();
 }
 function startEdit(id){
   const e=entries[id]; if(!e)return; editingId=id;
-  $("fType").value=e.type||"ot"; $("fDate").value=e.date; $("fStart").value=e.start||""; $("fEnd").value=e.end||""; if(e.start&&e.end) markTimes("fStart","fEnd"); $("fHours").value=e.hours; $("fRecalled").checked=e.recalled!=null?!!e.recalled:(e.mult==2&&autoRate(e.date,false,settings.sched,settings.shift).mult!==2); calMonth=e.date.slice(0,7); setComp(e.comp||"cash"); $("fNote").value=e.note||"";
+  $("fType").value=e.type||"ot"; lastType=e.type||"ot"; sheetDay=e.date; $("fDate").value=e.date; $("fStart").value=e.start||""; $("fEnd").value=e.end||""; if(e.start&&e.end) markTimes("fStart","fEnd"); $("fHours").value=e.hours; $("fHours").dataset.typed="1"; $("fRecalled").checked=e.recalled!=null?!!e.recalled:(e.mult==2&&autoRate(e.date,false,settings.sched,settings.shift).mult!==2); calMonth=e.date.slice(0,7); setComp(e.comp||"cash"); $("fNote").value=e.note||"";
   if(e.type==="oncall"){setOcLevel(e.level||"OA");$("ocStart").value=e.ocStart||"";$("ocEnd").value=e.ocEnd||"";}
   if(e.type==="claim") fillClaimForm(e); setMode();
   $("confirmBox").hidden=!e.confirmed; $("fStub").value=e.stubDate||""; $("fPaid").value=e.paid!=null?fmtMoney(e.paid):"";
@@ -1353,10 +1355,19 @@ function startEdit(id){
   setViewMode(false); lockOtOption(); $("formTitle").textContent="Edit entry"; $("sheetDelete").hidden=false; $("ocRepeatBox").hidden=true; $("sheetDelSeries").hidden=!e.seriesId; repeatHint(); renderDayHas(); updatePreview(); renderCal(); showSheet();
 }
 ["fStart","fEnd"].forEach(id=>$(id).addEventListener("change",syncHours));
-$("fHours").addEventListener("input",updatePreview);
+$("fHours").addEventListener("input",()=>{ $("fHours").dataset.typed="1"; updatePreview(); });
 $("fType").addEventListener("change",ev=>{ if($("fType").value!=="vac") return; ev.stopImmediatePropagation(); const ds=$("fDate").value||today(); $("fType").value="ot"; closeSheet(); openVac(null,ds); });
-$("fType").addEventListener("change",()=>{ if($("fStart").value) syncHours(); });
-$("fType").addEventListener("change",()=>{ if($("fType").value==="oncall") fillOcWindow($("fDate").value||today()); if($("fType").value==="claim"&&!editingId) fillClaimForm(null); setMode(); updatePreview(); });
+/* Switching type only works hours out from times you actually picked; the default times (and on call's window) never fill in hours. */
+$("fType").addEventListener("change",()=>{ const ty=$("fType").value; if(ty==="oncall"||ty==="claim") return;
+  if(timesUsed("fStart","fEnd")) syncHours(); else if(!$("fHours").dataset.typed) $("fHours").value=""; });
+$("fType").addEventListener("change",()=>{ const ty=$("fType").value;
+  if(ty==="oncall") fillOcWindow($("fDate").value||today());
+  else if(lastType==="oncall"&&!editingId&&sheetDay){   /* on call moved the date to the window's start; put back the day you tapped */
+    $("fDate").value=sheetDay; calMonth=sheetDay.slice(0,7); sheetDateTxt(); lockOtOption();
+    if(!timesUsed("fStart","fEnd")){ $("fStart").value=(settings.sched||DEFAULTS.sched)[dowOf(sheetDay)]==="work"?(settings.shift||DEFAULTS.shift).end:""; $("fEnd").value=""; if(!$("fHours").dataset.typed) $("fHours").value=""; }
+    renderCal(); }
+  if(ty==="claim"&&!editingId&&!claimInit){ fillClaimForm(null); claimInit=true; }   /* start the form once; switching away and back keeps what you entered */
+  lastType=ty; setMode(); updatePreview(); });
 ["ocStart","ocEnd"].forEach(id=>$(id).addEventListener("change",()=>{ if($("ocStart").value){$("fDate").value=$("ocStart").value.slice(0,10);calMonth=$("fDate").value.slice(0,7);renderCal();sheetDateTxt();} updatePreview(); }));
 document.querySelectorAll('input[name="ocl"]').forEach(r=>r.addEventListener("change",updatePreview));
 ["ocRepeat","ocUntil","ocStart","ocEnd"].forEach(id=>$(id).addEventListener("change",()=>{repeatHint();renderCal();}));
@@ -1388,7 +1399,7 @@ function lockOtOption(){
   if(ex&&$("fType").value==="ot"){ $("fType").value="callback"; $("fStart").value=""; $("fEnd").value=""; $("fHours").value=""; setMode(); updatePreview(); }
 }
 function openSheet(ds){
-  resetForm(); $("fDate").value=ds; calMonth=ds.slice(0,7);
+  resetForm(); sheetDay=ds; $("fDate").value=ds; calMonth=ds.slice(0,7);
   if((settings.sched||DEFAULTS.sched)[dowOf(ds)]==="work") $("fStart").value=(settings.shift||DEFAULTS.shift).end;
   lockOtOption();
   sheetDateTxt(); renderDayHas(); setViewMode(dayEntries(ds).length>0||vacOn(ds).length>0); updatePreview(); renderCal(); showSheet();
