@@ -892,15 +892,16 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.17.3";
+const APP_VERSION="2.17.5";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.17.5",date:"2026-11-08",kind:"patch",notes:[
+    "Overtime pay line now reads like your pay stub: 4.25 hrs at 1.5× = $420.56.",
+    "Lieu time is shown exactly, e.g. 4.25 hrs at 1.5× = 6.375 hrs banked, and the banks no longer round to 2 decimals."]},
+  {v:"2.17.4",date:"2026-11-08",kind:"patch",notes:[
+    "Overtime, callback and court time shows in hours and minutes, like 4h15m (paid in 15-min blocks). On call, pay hours, banks and vacation stay in decimals."]},
   {v:"2.17.3",date:"2026-11-08",kind:"patch",notes:[
-    "Calendar day numbers show only overtime, callbacks and court worked. On call shows as the blue fill; tap the day for its hours and pay."]},
-  {v:"2.17.2",date:"2026-11-08",kind:"patch",notes:[
-    "Dates use a regular hyphen (Nov-12-2026) everywhere, including travel expense days and trip dates."]},
-  {v:"2.17.1",date:"2026-11-08",kind:"patch",notes:[
-    "Vacation bar now fills up as you use hours and reads like 174 / 200 hrs, with hours left shown underneath."]}
+    "Calendar day numbers show only overtime, callbacks and court worked. On call shows as the blue fill; tap the day for its hours and pay."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -965,12 +966,16 @@ function whenTxt(e){
   const endDate=mins(e.end)<=mins(e.start)?(()=>{const [y,m,d]=e.date.split("-").map(Number);return new Date(Date.UTC(y,m-1,d+1)).toISOString().slice(0,10);})():e.date;
   return dtShort(e.date+"T"+e.start)+" → "+(endDate===e.date?tLabel(e.end):dtShort(endDate+"T"+e.end));
 }
+/* Overtime time in hours and minutes (paid in 15-min blocks): 4.25 -> "4h15m". Anything that isn't a whole 15 min stays decimal. */
+function hm(h){ const q=Math.round(h*4); if(Math.abs(h*4-q)>1e-6) return hrU(h);
+  const t=q*15, H=Math.floor(t/60), M=t%60; return H&&M?H+"h"+M+"m":H?H+"h":M+"m"; }
 /* Two short lines showing how the pay is worked out, for overtime, callbacks and court. */
 function otMathLines(e){
-  const ph=paidHours(e), lto=e.comp==="lto", tail=lto?" banked":" pay", r2=x=>Math.round(x*100)/100;
-  if(e.segs&&e.segs.length>1) return [ e.segs.map(s=>hrU(s.h)+" × "+s.mult+"×").join(" + "), "= "+hrU(r2(ph*e.mult))+tail ];
-  const l1=hrU(e.hours)+" worked"+(ph!==e.hours?" → "+hrU(ph)+(ph>e.hours?" (minimum)":" (15-min blocks)"):"");
-  return [ l1, hrU(ph)+" × "+multTxt(e.mult)+" = "+hrU(r2(ph*e.mult))+tail ];
+  /* Line 2 matches the pay stub: hours worked in 15-min blocks at the overtime rate, then the dollars (or hours banked). */
+  const ph=paidHours(e), lto=e.comp==="lto", res=lto?hxU(ph*e.mult)+" banked":money(expected(e));
+  if(e.segs&&e.segs.length>1) return [ e.segs.map(s=>hm(s.h)+" at "+multTxt(s.mult)).join(" + "), e.segs.map(s=>stubH(s.h)+" at "+multTxt(s.mult)).join(" + ")+" = "+res ];
+  const l1=hm(e.hours)+" worked"+(ph!==e.hours?" → "+hm(ph)+(ph>e.hours?" (minimum)":" (15-min blocks)"):"");
+  return [ l1, stubH(ph)+" at "+multTxt(e.mult)+" = "+res ];
 }
 function mathBox(e,all){
   const oc=e.type==="oncall", cl=e.type==="claim", box=document.createElement("div"); box.className="mathbox "+(oc?"isoc":cl?"iscl":"isot");
@@ -1015,10 +1020,15 @@ function setMode(){const ty=$("fType").value, oc=ty==="oncall", cl=ty==="claim";
 const shortD=fmtD;
 const money=n=>settings.currency+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const hrs=n=>(Math.round(n*100)/100).toString();
+/* Lieu-time hours: exact to 3 decimals (4.25 hrs at 1.5× banks 6.375 hrs). */
+const hx=n=>(Math.round(n*1000)/1000).toString();
+const hxU=n=>hx(n)+(Math.abs(n-1)<1e-9?" hr":" hrs");
+/* Hours the way a pay stub lists them: 4.25 hrs, 2.00 hrs. */
+const stubH=n=>n.toFixed(2)+" hrs";
 const multTxt=m=>m==1.5?"1.5×":m==2?"2×":(Math.round(m*100)/100)+"×";
 const rateTxt=e=>e.segs&&e.segs.length>1?e.segs.map(s=>s.mult+"×").join(" + "):multTxt(e.mult);
 const hrU=n=>hrs(n)+(Math.abs(n-1)<1e-9?" hr":" hrs");
-const segTxt=segs=>segs.map(s=>hrs(s.h)+" hrs "+s.day+" at "+s.mult+"×").join(" + ");
+const segTxt=segs=>segs.map(s=>stubH(s.h)+" "+s.day+" at "+s.mult+"×").join(" + ");
 const t12=t=>{let [h,m]=t.split(":").map(Number);const ap=h<12?"am":"pm";h=h%12||12;return h+":"+String(m).padStart(2,"0")+ap;};
 const nEntries=n=>n+" "+(n===1?"entry":"entries");
 const comp=()=>document.querySelector('input[name="comp"]:checked').value;
@@ -1088,20 +1098,20 @@ function render(){
     const B=bankBalance(all,k), tot=Math.max(0,B.start+B.earned-B.used), full=tot>=80, el=$(id); el.textContent="";
     const head=document.createElement("div"); head.className="bhead";
     const nm=document.createElement("span"); nm.className="label"; nm.textContent=name;
-    const val=document.createElement("span"); val.className="num bval"; val.textContent=hrs(tot)+" / 80 hrs";
+    const val=document.createElement("span"); val.className="num bval"; val.textContent=hx(tot)+" / 80 hrs";
     head.append(nm,val);
     const bar=document.createElement("div"); bar.className="pbar"+(full?" full":""); bar.setAttribute("role","progressbar");
-    bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax","80"); bar.setAttribute("aria-valuenow",String(Math.round(tot*100)/100)); bar.setAttribute("aria-label",name+": "+hrs(tot)+" of 80 hours");
+    bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax","80"); bar.setAttribute("aria-valuenow",String(Math.round(tot*100)/100)); bar.setAttribute("aria-label",name+": "+hx(tot)+" of 80 hours");
     const pct=x=>Math.min(100,Math.max(0,x/80*100));
     const sHrs=B.used?tot:Math.min(B.start,80);   /* once hours are used, show one fill */
     const sSeg=document.createElement("span"); sSeg.className="seg start"; sSeg.style.width=pct(sHrs)+"%";
     const eSeg=document.createElement("span"); eSeg.className="seg earn"; eSeg.style.width=Math.max(0,pct(tot)-pct(sHrs))+"%";
     bar.append(sSeg,eSeg);
     for(const t of [20,40,60]){const tk=document.createElement("i"); tk.className="tick"; tk.style.left=(t/80*100)+"%"; bar.append(tk);}
-    const tx=document.createElement("span"); tx.className="ptext"; tx.textContent=hrs(tot)+" hrs"; bar.append(tx);
+    const tx=document.createElement("span"); tx.className="ptext"; tx.textContent=hx(tot)+" hrs"; bar.append(tx);
     const foot=document.createElement("div"); foot.className="bfoot";
-    let ft=""; if(B.start||B.earned||B.used){ ft=hrs(B.start)+" starting + "+hrs(B.earned)+" earned"+(B.used?" − "+hrs(B.used)+" used":"")+" · "; }
-    foot.textContent=ft+(full?"At the 80-hr cap ("+cap+")":hrs(80-tot)+" hrs left before the 80-hr cap ("+cap+")");
+    let ft=""; if(B.start||B.earned||B.used){ ft=hx(B.start)+" starting + "+hx(B.earned)+" earned"+(B.used?" − "+hx(B.used)+" used":"")+" · "; }
+    foot.textContent=ft+(full?"At the 80-hr cap ("+cap+")":hx(80-tot)+" hrs left before the 80-hr cap ("+cap+")");
     const ub=document.createElement("button"); ub.type="button"; ub.className="usebtn"; ub.textContent="Use hours"; ub.onclick=()=>openLto(k);
     foot.append(" ",ub);
     el.append(head,bar,foot);
@@ -1216,7 +1226,7 @@ function buildEntry(e,all){
 
     const r=document.createElement("div"); r.className="e-right";
     const amt=document.createElement("div"); amt.className="e-amt";
-    amt.textContent=lto?"+"+hrU(ltoCredit(e)):money(amountOf(e));
+    amt.textContent=lto?"+"+hxU(ltoCredit(e)):money(amountOf(e));
     { const n=netInfo(e); if(n){ const nl=document.createElement("div"); nl.className="netl"; nl.textContent="≈ "+money(n.net)+" net"; r.append(nl); } }
     const bx=document.createElement("div"); bx.className="e-btns";
     const eb=document.createElement("button"); eb.type="button"; eb.textContent="Edit"; eb.onclick=()=>startEdit(e.id);
@@ -1276,10 +1286,10 @@ function updatePreview(){
   const ph=paidHours(d), typ=TYPES[d.type];
   let why=""; if(d.preShift) why=" (26.04: called back within 3 hrs of your shift, paid until it starts, no minimum)"; else if(ph>d.hours) why=" ("+typ.ref+")"; else if(ph<d.hours) why=" (paid in completed 15 min blocks, 25.02)";
   const sp=timesUsed("fStart","fEnd")?shiftSplit($("fDate").value||today(),$("fStart").value,$("fEnd").value,settings.sched,settings.shift):null;
-  if(sp&&sp.inside>0&&!d.preShift) why+=" · "+hrs(sp.inside)+" hrs inside your regular shift not counted";
+  if(sp&&sp.inside>0&&!d.preShift) why+=" · "+hm(sp.inside)+" inside your regular shift not counted";
   const b=document.createElement("b");
-  if(d.comp==="lto"){b.textContent=hrs(ltoCredit(d))+" hrs LTO"; P.append("Earns ",b," · "+(d.segs?segTxt(d.segs):hrs(ph)+" hrs × "+multTxt(d.mult))+why);}
-  else{b.textContent=money(expected(d)); P.append("Expected pay ",b," · "+(d.segs?segTxt(d.segs)+" × "+money(d.rate):hrs(ph)+" hrs × "+multTxt(d.mult)+" × "+money(d.rate))+why); addNet(P,d);}
+  if(d.comp==="lto"){b.textContent=hx(ltoCredit(d))+" hrs LTO"; P.append("Earns ",b," · "+(d.segs?segTxt(d.segs):stubH(ph)+" at "+multTxt(d.mult))+why);}
+  else{b.textContent=money(expected(d)); P.append("Expected pay ",b," · "+(d.segs?segTxt(d.segs)+" × "+money(d.rate):stubH(ph)+" at "+multTxt(d.mult)+" × "+money(d.rate))+why); addNet(P,d);}
 }
 function addNet(P,d){
   const prev=editingId&&entries[editingId], pv=$("fPaid").value, useStub=!!(prev&&prev.confirmed&&pv!=="");
@@ -1398,7 +1408,7 @@ function renderDayHas(){
     const nm=document.createElement("strong"); nm.textContent=e.type==="claim"?(e.trip?"Travel expenses (trip)":"Travel expenses"):typ.name+(oc?" ("+(e.level||"OA")+")":"");
     const tg=document.createElement("span"); tg.className="tag"+(e.type==="claim"?" cll":""); tg.textContent=e.type==="claim"?"NJC":rateTxt(e); nm.append(tg);
     if(lto){const t2=document.createElement("span");t2.className="tag";t2.textContent="LTO";nm.append(t2);}
-    const amt=document.createElement("span"); amt.className="e-amt"; amt.textContent=lto?"+"+hrU(ltoCredit(e)):money(amountOf(e));
+    const amt=document.createElement("span"); amt.className="e-amt"; amt.textContent=lto?"+"+hxU(ltoCredit(e)):money(amountOf(e));
     top.append(nm,amt);
     const tm=document.createElement("div"); tm.className="dtime";
     tm.textContent=e.type==="claim"?claimSummary(e):whenTxt(e);
@@ -1499,7 +1509,7 @@ function askConfirm(id,on,after){
   const e=entries[id]; if(!e) return; confPending={id,on,after};
   const typ=TYPES[e.type]||TYPES.ot, lto=e.comp==="lto"&&e.type!=="claim", cl=e.type==="claim";
   $("confTitle").textContent=on?(lto?"Confirm lieu time banked?":cl?"Confirm travel expenses paid?":"Confirm overtime paid?"):"Move back to waiting?";
-  $("confWhat").textContent=nice(e.date)+" · "+(cl?(e.trip?"Travel expenses (trip)":"Travel expenses"):typ.name+(e.type==="oncall"?" ("+(e.level||"OA")+")":""))+" · "+(lto?"+"+hrs(ltoCredit(e))+" hrs LTO":money(xp(e)));
+  $("confWhat").textContent=nice(e.date)+" · "+(cl?(e.trip?"Travel expenses (trip)":"Travel expenses"):typ.name+(e.type==="oncall"?" ("+(e.level||"OA")+")":""))+" · "+(lto?"+"+hx(ltoCredit(e))+" hrs LTO":money(xp(e)));
   $("confMsg").textContent=on?(lto?"Check that these hours show in your lieu time bank, then confirm.":"Check that this shows on your pay stub. Add the stub date and, if you like, the amount it paid."):"This removes the confirmation and the stub date and amount saved with it.";
   $("confFields").hidden=!on; $("confPaid").closest(".field").hidden=lto;
   $("confStub").value=e.stubDate||today(); $("confPaid").value=e.paid!=null?fmtMoney(e.paid):""; $("confPaid").placeholder=lto?"":money(xp(e)).replace(/[^0-9.]/g,"");
@@ -1568,7 +1578,7 @@ function renderCal(){
     if(tripDates.has(ds)){ const tb=document.createElement("i"); tb.className="tripband"; b.append(tb); }
     const list=byDate[ds]||[]; let lbl=(clDates.has(ds)?"travel expenses, ":"")+DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"")+(isVac?", vacation":"");
     if(list.length){const tot=list.reduce((t,e)=>t+paidHours(e),0), allOk=list.every(e=>e.confirmed);
-      const c=document.createElement("span"); c.className="eh"+(allOk?" ok":""); c.textContent=hrs(tot)+"hr"; b.append(c);
+      const c=document.createElement("span"); c.className="eh"+(allOk?" ok":""); c.textContent=hm(tot); b.append(c);
       lbl+=", "+hrs(tot)+" hours logged"+(allOk?", confirmed":"");}
     b.setAttribute("aria-label",lbl); b.setAttribute("aria-pressed",String(ds===sel));
     b.onclick=()=>openSheet(ds);
@@ -1785,7 +1795,7 @@ function fillClaimForm(e){
 const ltoKind=()=>document.querySelector('input[name="ltob"]:checked').value;
 function ltoAvail(kind){ const B=bankBalance(workEntries(),kind); return Math.max(0,B.start+B.earned-B.used); }
 function renderLto(){
-  const k=ltoKind(); $("ltoBal").textContent=(k==="ot"?"Overtime LTO":"OA LTO")+" balance: "+hrU(ltoAvail(k));
+  const k=ltoKind(); $("ltoBal").textContent=(k==="ot"?"Overtime LTO":"OA LTO")+" balance: "+hxU(ltoAvail(k));
   const H=$("ltoHist"); H.textContent=""; const list=ltoUses().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
   if(!list.length) return;
   const h=document.createElement("span"); h.className="label"; h.textContent="Recently used"; const box=document.createElement("div"); box.className="lhist"; box.append(h);
@@ -1808,7 +1818,7 @@ $("ltoSave").onclick=async()=>{
   const k=ltoKind(), h=Math.round((Number($("ltoHrs").value)||0)*100)/100, d=$("ltoDate").value, err=$("ltoErr"), av=ltoAvail(k);
   if(!d){err.textContent="Pick the date you took the time off.";err.hidden=false;return;}
   if(!(h>0)){err.textContent="Enter the hours you took, for example 10.";err.hidden=false;return;}
-  if(h>av+1e-9){err.textContent="Only "+hrU(av)+" available in "+(k==="ot"?"Overtime LTO":"OA LTO")+". Check the hours, or update the starting balance in Settings.";err.hidden=false;return;}
+  if(h>av+1e-9){err.textContent="Only "+hxU(av)+" available in "+(k==="ot"?"Overtime LTO":"OA LTO")+". Check the hours, or update the starting balance in Settings.";err.hidden=false;return;}
   if(settings.ltoAsOf&&d<=settings.ltoAsOf){err.textContent="That date is on or before your starting-balance date ("+nice(settings.ltoAsOf)+"), so it's already counted in the starting balance.";err.hidden=false;return;}
   err.hidden=true;
   const u={id:"u"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:"ltouse",bank:k,date:d,hours:h,note:$("ltoNote").value.trim(),created:Date.now()};
