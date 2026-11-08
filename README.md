@@ -1,4 +1,4 @@
-# Overtime Tracker (v2.5.5)
+# Overtime Tracker (v2.7.0)
 
 A phone app for tracking RCMP overtime, callbacks, court and OA on-call time, and confirming each entry against your pay stub.
 
@@ -18,6 +18,14 @@ This copy saves your entries **on the phone, in Chrome**, not in your Claude acc
 - Entries you made in the Claude version do **not** carry over. You'll start empty.
 - Clearing Chrome's data for the site, or uninstalling the app, **erases your entries**.
 - Entries don't sync between devices.
+
+## Backing up to Google Drive
+
+Tap **BACKUP** at the top of the app (next to the version number). It turns gold and shows a count, like **BACKUP • 3**, when you have changes that aren't backed up. Your phone's share menu opens: choose **Drive**, then **Save**. Do this every week or two (the app reminds you after 14 days).
+
+To restore (new phone, reset, or moving entries from the Claude version): tap **Restore from a backup file** and pick the backup from Google Drive. Entries already in the app are kept, and only missing ones are added.
+
+**Moving your entries from the Claude version:** open the app in Claude, tap **Back up to Google Drive** there, then in the phone app tap **Restore from a backup file** and pick that file.
 
 ## Part 1: Put it on GitHub (about 10 minutes, no coding)
 

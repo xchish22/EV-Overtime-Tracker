@@ -239,6 +239,14 @@ li.entry.tap:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .dcard .mathbox{margin-top:2px;background:var(--bg)}
 .dtpair{display:grid;grid-template-columns:1.25fr 1fr;gap:8px}
 .ocbox .field>.label{font-size:.72rem}
+.bkrow{display:flex;flex-direction:column;gap:6px}
+.btn-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:700;cursor:pointer}
+.btn-secondary:focus-within,.btn-secondary:hover{border-color:var(--muted)}
+.bkconfirm{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;background:var(--accent-soft)}
+.bkwarn{color:var(--bad);font-weight:600}
+.bktop{font-family:var(--f-mono);font-size:.7rem;font-weight:700;letter-spacing:.08em;vertical-align:middle;padding:3px 10px;min-height:0;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.bktop.dirty{background:var(--gold,#f2b84b);border-color:transparent;color:#1b1200}
+.bktop:disabled{opacity:.6;cursor:progress}
 /* ===== v2.4.0 visual refresh: navy duty-board header, gold highlights, softer cards ===== */
 :root{
   --bg:#edf0f4; --line:#dde3ea; --accent:#9a6700; --accent-ink:#ffffff; --accent-soft:#fbf1da; --gold:#f2b84b;
@@ -265,6 +273,7 @@ button{border-radius:10px;transition:background-color .15s,border-color .15s,box
 .hero::before{content:"";position:absolute;left:18px;top:0;width:56px;height:4px;border-radius:0 0 4px 4px;background:var(--gold)}
 .hero h1{font-size:2.3rem;letter-spacing:.03em;color:var(--hero-ink)}
 .hero .sub,.hero .status{color:var(--hero-muted)}
+.hero .bktop:not(.dirty){background:rgba(255,255,255,.08);border-color:var(--hero-line);color:var(--hero-muted)}
 .hero .verchip{background:rgba(255,255,255,.08);border-color:var(--hero-line);color:var(--hero-muted)}
 .hero .card.totals{background:rgba(255,255,255,.045);box-shadow:none;border:1px solid var(--hero-line);border-radius:16px;backdrop-filter:blur(2px)}
 .hero .totals>div+div,.hero .totals>.lto,.hero .totals>.wsplit{border-color:var(--hero-line)}
@@ -331,7 +340,7 @@ details.settings[open]>summary::after{content:"－"}
   <div class="hero">
   <header class="top">
     <div>
-      <h1>Overtime Tracker <button type="button" class="verchip" id="verChip" aria-label="Version and what's new"></button></h1>
+      <h1>Overtime Tracker <button type="button" class="verchip" id="verChip" aria-label="Version and what's new"></button> <button type="button" class="bktop" id="bkTop" aria-label="Back up to Google Drive">BACKUP<span id="bkCount"></span></button></h1>
       <div class="sub" id="rateLine">Hourly rate $65.97</div>
     </div>
     <div class="status" id="status">Loading…</div>
@@ -463,8 +472,30 @@ details.settings[open]>summary::after{content:"－"}
     </form>
   </details>
 
+  <details class="card settings" id="backupBox">
+    <summary>Backup &amp; restore</summary>
+    <div class="about">
+      <p class="small" id="bkLast">No backup yet.</p>
+      <div class="bkrow">
+        <button type="button" class="btn-primary" id="bkSave">Back up to Google Drive</button>
+        <p class="hint" id="bkHow"></p>
+      </div>
+      <div class="bkrow">
+        <label class="btn-secondary" for="bkFile">Restore from a backup file</label>
+        <input type="file" id="bkFile" accept=".json,application/json" hidden>
+        <p class="hint">Pick your backup file. On Android you can choose it straight from Google Drive. Entries already in the app are kept; entries from the backup that aren't here are added.</p>
+      </div>
+      <div class="bkconfirm" id="bkConfirm" hidden>
+        <p id="bkSummary"></p>
+        <label class="ckline"><input type="checkbox" id="bkSettings" checked>Also restore settings (pay rate, schedule, shift, lieu time balances)</label>
+        <div class="actions"><button type="button" class="btn-primary" id="bkDo">Restore</button><button type="button" id="bkCancel">Cancel</button></div>
+      </div>
+      <p class="small" id="bkMsg" role="status"></p>
+    </div>
+  </details>
+
   <details class="card settings" id="aboutBox">
-    <summary>About &amp; what's new</summary>
+    <summary>About &amp; recent updates</summary>
     <div class="about">
       <p class="small" id="aboutLine"></p>
       <div id="changelog"></div>
@@ -612,51 +643,18 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.5.5";
+const APP_VERSION="2.7.0";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
-const CHANGELOG=[
+const CHANGELOG=[   /* recent releases only */
+  {v:"2.7.0",date:"2026-11-08",kind:"minor",notes:[
+    "BACKUP button at the top, next to the version: one tap backs up to Google Drive.",
+    "It shows how many changes aren't backed up yet (e.g. BACKUP • 3) and turns gold until you back up."]},
+  {v:"2.6.0",date:"2026-11-08",kind:"minor",notes:[
+    "Backup & restore: back up all entries and settings to Google Drive, and restore them from a backup file (also how you move entries to a new phone).",
+    "Shows when you last backed up, with a reminder after 14 days.",
+    "What's new shows recent updates only."]},
   {v:"2.5.5",date:"2026-11-07",kind:"patch",notes:[
-    "Overtime LTO and OA LTO banks are full progress bars: hours shown inside the bar, starting balance and earned hours in two shades, ticks every 20 hrs, and hours left before the 80-hr cap."]},
-  {v:"2.5.4",date:"2026-11-07",kind:"patch",notes:[
-    "Overtime and on-call entries share one layout in every tab: pay period and start → finish, status, then a two-line box showing how the pay is worked out (red for overtime, blue for on call)."]},
-  {v:"2.5.3",date:"2026-11-07",kind:"patch",notes:[
-    "Hours are written as \"hr\" / \"hrs\" everywhere instead of \"h\" (on-call lines, lieu time amounts and calendar badges)."]},
-  {v:"2.5.2",date:"2026-11-07",kind:"patch",notes:[
-    "On-call entries explain the pay in two short lines: hours on call minus hours worked, then OA's 1 hour per 8."]},
-  {v:"2.5.1",date:"2026-11-07",kind:"patch",notes:[
-    "Fix: overtime that runs past midnight into a day with a different rate is now split by day. Sunday 4:00 pm to Monday 6:00 am is 8 hrs at 2× plus 6 hrs at 1.5×, not 14 hrs at 2×."]},
-  {v:"2.5.0",date:"2026-11-07",kind:"minor",notes:[
-    "Time pickers use 15-minute steps (matching 25.02's completed 15-minute periods) for overtime, on-call and shift times.",
-    "On-call start and finish are a date box plus a time list.",
-    "Entries saved earlier at other minutes (e.g. 4:20) keep their exact time when edited."]},
-  {v:"2.4.0",date:"2026-11-07",kind:"minor",notes:[
-    "New look: navy header with your totals and lieu time bars, gold highlights, softer cards, segmented tabs, rounder calendar days and phone-style pop-ups.",
-    "No change to features or saved data."]},
-  {v:"2.3.0",date:"2026-11-07",kind:"minor",notes:[
-    "Starting balances for the Overtime LTO and On-call LTO banks, with an \"as of\" date (Settings).",
-    "Each bank shows starting hours plus hours earned since, against its 80-hour cap."]},
-  {v:"2.2.1",date:"2026-11-07",kind:"patch",notes:[
-    "\"Waiting for pay stub\" at the top now uses the same rules as the Waiting list, with an Overtime line and an On call line.",
-    "An on-call period starting later today is no longer counted before it begins."]},
-  {v:"2.2.0",date:"2026-11-07",kind:"minor",notes:[
-    "The Waiting tab is split into Overtime waiting and On call waiting, each with its own total.",
-    "Only on-call time that has started shows in the list and the totals; future on-call weekends stay on the calendar until they begin.",
-    "On-call periods under way show as In progress with their end time."]},
-  {v:"2.1.0",date:"2026-11-07",kind:"minor",notes:[
-    "Pay periods are numbered: Oct 29 – Nov 11, 2026 is PP 23. Numbers show in the header, on pay period cards and on each entry.",
-    "PP 1 is the first pay period ending in January; years with 27 pay periods are handled.",
-    "Settings: \"This pay period's number\" lets you correct the numbering if it ever differs from your stub."]},
-  {v:"2.0.1",date:"2026-11-07",kind:"patch",notes:[
-    "Overtime, callbacks and court worked during an on-call period now come off the on-call hours (22.14).",
-    "Entries on the same day sort by start time.",
-    "Added version number, version history and automatic data upgrades."]},
-  {v:"2.0.0",date:"2026-11-07",kind:"major",notes:[
-    "Calendar with pop-up entry and day details; shift, on-call and overtime drawn on a 24-hour timeline.",
-    "RCMP RM agreement rules: 1.5× / 2× by day (25.04), 15-minute blocks (25.02), callback and court minimums (26.02, 26.06, 27.01), early callback (26.04).",
-    "4/10 schedule with your 6:30am–4:30pm shift; time inside the shift isn't counted as overtime.",
-    "OA / OR on call (Art. 22) with auto-fill and repeats; separate overtime and on-call LTO banks.",
-    "Bi-weekly pay periods, a single waiting list and pay stub confirmation.",
-    "2026 federal and BC take-home estimates."]}
+    "Overtime LTO and OA LTO banks are full progress bars: hours shown inside the bar, starting balance and earned hours in two shades, ticks every 20 hrs, and hours left before the 80-hr cap."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -1263,7 +1261,7 @@ function renderVersion(){
   $("verChip").textContent="v"+APP_VERSION;
   const cur=CHANGELOG[0]; $("aboutLine").textContent="Overtime Tracker v"+APP_VERSION+" · released "+nice(cur.date)+", "+cur.date.slice(0,4)+" · data format "+DATA_SCHEMA;
   const C=$("changelog"); C.textContent="";
-  for(const r of CHANGELOG){
+  for(const r of CHANGELOG.slice(0,3)){
     const box=document.createElement("div"); box.className="rel";
     const h=document.createElement("div"); h.className="rh";
     const v=document.createElement("span"); v.className="rv"; v.textContent="v"+r.v;
@@ -1278,13 +1276,100 @@ function renderVersion(){
 }
 function openAbout(){ $("updBanner").hidden=true; const a=$("aboutBox"); a.open=true; a.scrollIntoView({behavior:"smooth",block:"start"}); }
 $("verChip").onclick=openAbout; $("updSee").onclick=openAbout; $("updX").onclick=()=>{$("updBanner").hidden=true;};
+/* ---------- backup & restore ---------- */
+const BK_KEY="ot-last-backup";
+function lastBackup(){ try{return localStorage.getItem(BK_KEY);}catch(x){return null;} }
+function renderBackup(){
+  const lb=lastBackup(), el=$("bkLast");
+  if(!lb){ el.textContent="No backup yet. Back up regularly so a lost or reset phone doesn't lose your entries."; el.className="small bkwarn"; }
+  else{ const days=Math.floor((Date.now()-Number(lb))/86400000), d=new Date(Number(lb));
+    el.textContent="Last backup: "+DOW[d.getDay()]+" "+MON[d.getMonth()].slice(0,3)+" "+d.getDate()+", "+d.getFullYear()+(days>=14?" ("+days+" days ago, time for a new one)":"");
+    el.className="small"+(days>=14?" bkwarn":""); }
+  $("bkHow").textContent=window.claude?.use
+    ? "Saves a backup file straight to your Google Drive (Google Drive needs to be connected in claude.ai Settings → Connectors). If it isn't, you can save the file instead."
+    : "Opens your phone's share menu: choose Drive to save the backup file to your Google Drive.";
+}
+function backupData(){ return {app:"overtime-tracker",appVersion:APP_VERSION,schema:DATA_SCHEMA,exportedAt:new Date().toISOString(),settings,entries:Object.values(entries)}; }
+const bkName=()=>"overtime-backup-"+today()+".json";
+const DIRTY_KEY="ot-unbacked";
+function dirtyCount(){ try{return Number(localStorage.getItem(DIRTY_KEY))||0;}catch(x){return 0;} }
+function markDirty(){ try{localStorage.setItem(DIRTY_KEY,String(dirtyCount()+1));}catch(x){} renderBkTop(); }
+function renderBkTop(){ const n=dirtyCount(), b=$("bkTop"); b.classList.toggle("dirty",n>0||!lastBackup()); $("bkCount").textContent=n>0?" • "+n:"";
+  b.setAttribute("aria-label",n>0?"Back up to Google Drive, "+n+" change"+(n===1?"":"s")+" not backed up":"Back up to Google Drive"); }
+function bkDone(msg){ try{localStorage.setItem(BK_KEY,String(Date.now()));localStorage.setItem(DIRTY_KEY,"0");}catch(x){} renderBackup(); renderBkTop(); $("bkMsg").textContent=msg; if(bkFromTop) flash(msg); }
+let bkFromTop=false;
+function showBkSection(){ const d=$("backupBox"); d.open=true; d.scrollIntoView({behavior:"smooth",block:"start"}); }
+async function saveFileFallback(json){
+  const dl=window.claude?.use?await claude.use("downloads").catch(()=>null):null;
+  if(dl){ try{ await dl.save({filename:bkName(),data:json}); bkDone("Backup file saved. Upload it to Google Drive to keep it safe."); }
+          catch(x){ $("bkMsg").textContent=x&&x.code==="declined"?"Backup cancelled.":"Couldn't save the backup file here."; } return; }
+  const url=URL.createObjectURL(new Blob([json],{type:"application/json"})), a=document.createElement("a");
+  a.href=url; a.download=bkName(); document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000);
+  bkDone("Backup saved to your Downloads. Upload it to Google Drive to keep it safe.");
+}
+$("bkSave").onclick=async()=>{
+  const json=JSON.stringify(backupData(),null,1), btn=$("bkSave"); $("bkMsg").textContent=""; btn.disabled=true;
+  try{
+    if(window.claude?.use){
+      const mcp=await claude.use("mcp").catch(()=>null);
+      if(mcp){
+        try{
+          await mcp.callTool("Google Drive","create_file",{title:bkName(),textContent:json,contentMimeType:"application/json",disableConversionToGoogleType:true});
+          bkDone("Backed up to Google Drive as "+bkName()+"."); return;
+        }catch(x){
+          const c=x&&x.code;
+          if(c==="server_not_connected") $("bkMsg").textContent="Google Drive isn't connected. Add it in claude.ai Settings → Connectors, or save the file instead:";
+          else if(c==="needs_reauth") $("bkMsg").textContent="Google Drive needs reconnecting in claude.ai Settings → Connectors. Or save the file instead:";
+          else if(c==="approval_required"||c==="not_in_manifest") $("bkMsg").textContent="Google Drive access wasn't allowed for this app. Tap the button again to allow it, or save the file instead:";
+          else if(c==="server_unavailable"||c==="upstream_error") $("bkMsg").textContent="Google Drive didn't answer. Check Drive before trying again (the file may have saved), or save the file instead:";
+          else $("bkMsg").textContent="Couldn't back up to Google Drive. You can save the file instead:";
+          const fb=document.createElement("button"); fb.type="button"; fb.textContent="Save backup file"; fb.style.marginLeft="6px"; fb.onclick=()=>saveFileFallback(json); $("bkMsg").append(" ",fb);
+          if(bkFromTop) showBkSection();
+          return;
+        }
+      }
+      await saveFileFallback(json); return;
+    }
+    const file=new File([json],bkName(),{type:"application/json"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file],title:"Overtime Tracker backup"}); bkDone("Backup shared. If you chose Drive, it's in your Google Drive."); }
+      catch(x){ $("bkMsg").textContent=x&&x.name==="AbortError"?"Backup cancelled.":"Couldn't open the share menu."; if(!(x&&x.name==="AbortError")) await saveFileFallback(json); }
+      return;
+    }
+    await saveFileFallback(json);
+  } finally { btn.disabled=false; $("bkTop").disabled=false; bkFromTop=false; }
+};
+$("bkTop").onclick=()=>{ bkFromTop=true; $("bkTop").disabled=true; $("bkSave").click(); };
+let bkPending=null;
+$("bkFile").addEventListener("change",async()=>{
+  const f=$("bkFile").files[0]; $("bkFile").value=""; $("bkMsg").textContent=""; if(!f) return;
+  let data=null; try{ data=JSON.parse(await f.text()); }catch(x){}
+  if(!data||data.app!=="overtime-tracker"||!Array.isArray(data.entries)){ $("bkMsg").textContent="That file isn't an Overtime Tracker backup. Choose a file named overtime-backup-….json."; return; }
+  const fresh=data.entries.filter(e=>e&&e.id&&e.date&&!entries[e.id]);
+  bkPending={data,fresh};
+  $("bkSummary").textContent="Backup from "+(data.exportedAt?data.exportedAt.slice(0,10):"unknown date")+" has "+data.entries.length+" entries; "+fresh.length+" aren't in the app yet and will be added.";
+  $("bkSettings").checked=true; $("bkSettings").closest("label").hidden=!data.settings;
+  $("bkConfirm").hidden=false;
+});
+$("bkCancel").onclick=()=>{bkPending=null;$("bkConfirm").hidden=true;};
+$("bkDo").onclick=async()=>{
+  if(!bkPending) return; const {data,fresh}=bkPending; bkPending=null; $("bkConfirm").hidden=true;
+  try{
+    for(const e of fresh){ const m=migrateEntry(e); entries[m.id]=m; await store.save(m); }
+    if(data.settings&&$("bkSettings").checked){ settings={...DEFAULTS,...migrateSettings(data.settings)}; await store.saveSettings(settings); fillSettings(); }
+    render(); updatePreview();
+    $("bkMsg").textContent="Restored "+fresh.length+" entr"+(fresh.length===1?"y":"ies")+($("bkSettings").checked&&data.settings?" and your settings":"")+".";
+  }catch(x){ render(); $("bkMsg").textContent="Some entries couldn't be saved. Try restoring again; entries already restored won't be duplicated."; }
+};
+function wrapStore(){ for(const k of ["save","remove","saveSettings"]){ const f=store[k]; store[k]=async(...a)=>{ const r=await f(...a); markDirty(); return r; }; } }
 async function init(){
+  renderBackup(); renderBkTop();
   renderVersion(); fillSettings(); resetForm(); render();
   let db=null,uid=null;
   try{if(window.claude?.use){const [d,u]=await Promise.all([claude.use("db"),claude.use("user")]);db=d;uid=u?await u.id():null;}}catch(x){}
   if(db&&uid){
     const base=db.doc("data/users/"+uid+"/profile"), col=base.collection("overtime");
-    store={label:"Saved to your account",save:e=>col.doc(e.id).set({...e,v:APP_VERSION}),remove:id=>col.doc(id).delete(),saveSettings:s=>base.set({settings:{...s,schema:DATA_SCHEMA,appVersion:APP_VERSION}})};
+    store={label:"Saved to your account",save:e=>col.doc(e.id).set({...e,v:APP_VERSION}),remove:id=>col.doc(id).delete(),saveSettings:s=>base.set({settings:{...s,schema:DATA_SCHEMA,appVersion:APP_VERSION}})}; wrapStore();
     const timer=setTimeout(()=>{$("status").textContent="Can't reach your saved entries yet. Still trying…";},10000);
     base.get().then(sn=>{const st=sn.exists&&sn.data().settings;if(st){settings={...DEFAULTS,...migrateSettings(st)};fillSettings();updatePreview();render();}}).catch(()=>{});
     col.onSnapshot(sn=>{
@@ -1293,7 +1378,7 @@ async function init(){
       if(!sn.metadata.fromCache){clearTimeout(timer);$("status").textContent=store.label;}
     },()=>{clearTimeout(timer);$("status").textContent="Couldn't load your entries. Reload to try again.";});
   }else{
-    store=localStore(); const o=store.load(); if(o.settings)settings={...DEFAULTS,...migrateSettings(o.settings)}; entries=Object.fromEntries(Object.entries(o.entries||{}).map(([k,v])=>[k,migrateEntry(v)]));
+    store=localStore(); wrapStore(); const o=store.load(); if(o.settings)settings={...DEFAULTS,...migrateSettings(o.settings)}; entries=Object.fromEntries(Object.entries(o.entries||{}).map(([k,v])=>[k,migrateEntry(v)]));
     fillSettings(); updatePreview(); render(); $("status").textContent=store.label;
   }
 }
