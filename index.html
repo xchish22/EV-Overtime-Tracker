@@ -482,7 +482,7 @@ details.settings[open]>summary::after{content:"－"}
       </div>
       <div class="bkrow">
         <label class="btn-secondary" for="bkFile">Restore from a backup file</label>
-        <input type="file" id="bkFile" accept=".json,application/json" hidden>
+        <input type="file" id="bkFile" accept=".txt,.json,text/plain,application/json" hidden>
         <p class="hint">Pick your backup file. On Android you can choose it straight from Google Drive. Entries already in the app are kept; entries from the backup that aren't here are added.</p>
       </div>
       <div class="bkconfirm" id="bkConfirm" hidden>
@@ -643,18 +643,20 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.7.0";
+const APP_VERSION="2.7.1";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.7.1",date:"2026-11-08",kind:"patch",notes:[
+    "Fix: on Android, BACKUP now opens the share menu so you can choose Drive. Backups are .txt files, because Chrome won't share .json files and was quietly saving to Downloads instead.",
+    "If a backup can only be saved on the phone, the app says so and explains how to upload it to Drive.",
+    "Restore accepts both .txt and older .json backups."]},
   {v:"2.7.0",date:"2026-11-08",kind:"minor",notes:[
     "BACKUP button at the top, next to the version: one tap backs up to Google Drive.",
     "It shows how many changes aren't backed up yet (e.g. BACKUP • 3) and turns gold until you back up."]},
   {v:"2.6.0",date:"2026-11-08",kind:"minor",notes:[
     "Backup & restore: back up all entries and settings to Google Drive, and restore them from a backup file (also how you move entries to a new phone).",
     "Shows when you last backed up, with a reminder after 14 days.",
-    "What's new shows recent updates only."]},
-  {v:"2.5.5",date:"2026-11-07",kind:"patch",notes:[
-    "Overtime LTO and OA LTO banks are full progress bars: hours shown inside the bar, starting balance and earned hours in two shades, ticks every 20 hrs, and hours left before the 80-hr cap."]}
+    "What's new shows recent updates only."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -1290,7 +1292,9 @@ function renderBackup(){
     : "Opens your phone's share menu: choose Drive to save the backup file to your Google Drive.";
 }
 function backupData(){ return {app:"overtime-tracker",appVersion:APP_VERSION,schema:DATA_SCHEMA,exportedAt:new Date().toISOString(),settings,entries:Object.values(entries)}; }
-const bkName=()=>"overtime-backup-"+today()+".json";
+/* .txt so Android's share menu accepts it (Chrome won't share .json files); the contents are JSON. */
+const bkName=()=>"overtime-backup-"+today()+".txt";
+const LOCAL_HOW="It's saved on this phone, not in Google Drive yet. To put it in Drive: open the Drive app → + → Upload → Downloads → pick "+bkName()+".";
 const DIRTY_KEY="ot-unbacked";
 function dirtyCount(){ try{return Number(localStorage.getItem(DIRTY_KEY))||0;}catch(x){return 0;} }
 function markDirty(){ try{localStorage.setItem(DIRTY_KEY,String(dirtyCount()+1));}catch(x){} renderBkTop(); }
@@ -1299,13 +1303,13 @@ function renderBkTop(){ const n=dirtyCount(), b=$("bkTop"); b.classList.toggle("
 function bkDone(msg){ try{localStorage.setItem(BK_KEY,String(Date.now()));localStorage.setItem(DIRTY_KEY,"0");}catch(x){} renderBackup(); renderBkTop(); $("bkMsg").textContent=msg; if(bkFromTop) flash(msg); }
 let bkFromTop=false;
 function showBkSection(){ const d=$("backupBox"); d.open=true; d.scrollIntoView({behavior:"smooth",block:"start"}); }
-async function saveFileFallback(json){
+async function saveFileFallback(json,why){
   const dl=window.claude?.use?await claude.use("downloads").catch(()=>null):null;
-  if(dl){ try{ await dl.save({filename:bkName(),data:json}); bkDone("Backup file saved. Upload it to Google Drive to keep it safe."); }
+  if(dl){ try{ await dl.save({filename:bkName(),data:json}); bkDone((why?why+" ":"")+"Backup file saved. "+LOCAL_HOW); showBkSection(); }
           catch(x){ $("bkMsg").textContent=x&&x.code==="declined"?"Backup cancelled.":"Couldn't save the backup file here."; } return; }
-  const url=URL.createObjectURL(new Blob([json],{type:"application/json"})), a=document.createElement("a");
+  const url=URL.createObjectURL(new Blob([json],{type:"text/plain"})), a=document.createElement("a");
   a.href=url; a.download=bkName(); document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000);
-  bkDone("Backup saved to your Downloads. Upload it to Google Drive to keep it safe.");
+  bkDone((why?why+" ":"")+"Backup saved to Downloads. "+LOCAL_HOW); showBkSection();
 }
 $("bkSave").onclick=async()=>{
   const json=JSON.stringify(backupData(),null,1), btn=$("bkSave"); $("bkMsg").textContent=""; btn.disabled=true;
@@ -1314,7 +1318,7 @@ $("bkSave").onclick=async()=>{
       const mcp=await claude.use("mcp").catch(()=>null);
       if(mcp){
         try{
-          await mcp.callTool("Google Drive","create_file",{title:bkName(),textContent:json,contentMimeType:"application/json",disableConversionToGoogleType:true});
+          await mcp.callTool("Google Drive","create_file",{title:bkName(),textContent:json,contentMimeType:"text/plain",disableConversionToGoogleType:true});
           bkDone("Backed up to Google Drive as "+bkName()+"."); return;
         }catch(x){
           const c=x&&x.code;
@@ -1328,15 +1332,15 @@ $("bkSave").onclick=async()=>{
           return;
         }
       }
-      await saveFileFallback(json); return;
+      await saveFileFallback(json,"Google Drive isn't reachable from this view of the app."); return;
     }
-    const file=new File([json],bkName(),{type:"application/json"});
+    const file=new File([json],bkName(),{type:"text/plain"});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
       try{ await navigator.share({files:[file],title:"Overtime Tracker backup"}); bkDone("Backup shared. If you chose Drive, it's in your Google Drive."); }
       catch(x){ $("bkMsg").textContent=x&&x.name==="AbortError"?"Backup cancelled.":"Couldn't open the share menu."; if(!(x&&x.name==="AbortError")) await saveFileFallback(json); }
       return;
     }
-    await saveFileFallback(json);
+    await saveFileFallback(json,"This browser didn't offer the share menu.");
   } finally { btn.disabled=false; $("bkTop").disabled=false; bkFromTop=false; }
 };
 $("bkTop").onclick=()=>{ bkFromTop=true; $("bkTop").disabled=true; $("bkSave").click(); };

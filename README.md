@@ -1,4 +1,4 @@
-# Overtime Tracker (v2.7.0)
+# Overtime Tracker (v2.7.1)
 
 A phone app for tracking RCMP overtime, callbacks, court and OA on-call time, and confirming each entry against your pay stub.
 
