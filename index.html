@@ -269,6 +269,9 @@ select.tgrey:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(1)}
 .tnight .tdh{grid-column:1/-1}
 .tnight select,.tnight input[type=number]{width:100%;min-height:40px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
 .tnight .ckline{grid-column:1/-1;font-size:.86rem}
+.ocdef{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center}
+.ocdef .ocarrow{grid-column:1/-1;text-align:center;color:var(--muted);line-height:1}
+.ocdef select{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);min-width:0}
 .clother{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
 .olist{display:flex;flex-direction:column;gap:8px}
 .orow{display:grid;grid-template-columns:1.5fr 1fr auto;gap:8px;align-items:center;padding:8px;border-radius:10px;background:var(--bg)}
@@ -551,6 +554,13 @@ details.settings[open]>summary::after{content:"－"}
       <div class="field"><label for="sPayStart">A pay period start date</label><input type="date" id="sPayStart"></div>
       <div class="field"><label for="sPpNum">This pay period's number</label><input type="number" id="sPpNum" inputmode="numeric" min="1" max="27" step="1"></div>
       <p class="hint" id="payHint">Pay periods repeat every 14 days from this date.</p>
+      <div class="field full"><span class="label">Default on-call window</span>
+        <div class="ocdef">
+          <select id="sOcSDay" aria-label="On-call starts on"></select><select id="sOcSTime" class="tsel" aria-label="On-call start time"></select>
+          <span class="ocarrow">→</span>
+          <select id="sOcEDay" aria-label="On-call ends on"></select><select id="sOcETime" class="tsel" aria-label="On-call end time"></select>
+        </div>
+        <p class="hint">Used when you add on call. Each entry can still be changed.</p></div>
       <div class="field"><label for="sShiftStart">Shift start</label><select id="sShiftStart" class="tsel"></select></div>
       <div class="field"><label for="sShiftEnd">Shift finish</label><select id="sShiftEnd" class="tsel"></select></div>
       <div class="field full taxset"><span class="label">Lieu time bank starting balances</span>
@@ -630,7 +640,7 @@ details.settings[open]>summary::after{content:"－"}
 
 <script>
 /* ===== CALC START ===== */
-const DEFAULTS={claims:{b:29.95,l:30.55,d:62.70,inc:25.00,km:0.63,priv:50.00,asOf:"2026-10-01"},ppOffset:0,rate:65.97,currency:"$",salary:137677,taxBase:120858,payCpp:true,payEi:true,sched:["rto","work","work","work","work","tow","rto"],payStart:"2026-10-29",shift:{start:"06:30",end:"16:30"}};
+const DEFAULTS={ocDefault:{sDay:5,sTime:"14:00",eDay:1,eTime:"06:00"},claims:{b:29.95,l:30.55,d:62.70,inc:25.00,km:0.63,priv:50.00,asOf:"2026-10-01"},ppOffset:0,rate:65.97,currency:"$",salary:137677,taxBase:120858,payCpp:true,payEi:true,sched:["rto","work","work","work","work","tow","rto"],payStart:"2026-10-29",shift:{start:"06:30",end:"16:30"}};
 const mins=t=>{const [h,m]=t.split(":").map(Number);return h*60+m;};
 const dowOf=d=>{const [y,m,dd]=d.split("-").map(Number);return new Date(y,m-1,dd).getDay();};
 const clock=t=>{let [h,m]=t.split(":").map(Number);const ap=h<12?"am":"pm";h=h%12||12;return h+":"+String(m).padStart(2,"0")+ap;};
@@ -794,19 +804,19 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.13.1";
+const APP_VERSION="2.14.0";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.14.0",date:"2026-11-08",kind:"minor",notes:[
+    "On call defaults to your usual window, Friday 2:00 pm → Monday 6:00 am, for the weekend you tap (Tue–Thu fill in the coming weekend).",
+    "The default window is editable in Settings; each on-call entry can still be changed."]},
   {v:"2.13.1",date:"2026-11-08",kind:"patch",notes:[
     "Time lists run 12:00 am → 11:45 pm again and sit on 12:00 pm, so they open at noon: scroll up for am, down for pm.",
     "Times are saved only once you pick one, so an hours-only entry never gets a 12:00 pm time by accident."]},
   {v:"2.13.0",date:"2026-11-08",kind:"minor",notes:[
     "\"Meal & travel claim\" is now called Travel expenses.",
     "Single-day travel expenses have optional start and finish times; trips use dates only (their times are greyed out).",
-    "Every time list opens at 12:00 pm (noon) instead of midnight."]},
-
-  {v:"2.12.1",date:"2026-11-08",kind:"patch",notes:[
-    "Claim and trip forms show a running total box: meals, incidentals, accommodation, mileage and other expenses, with the grand total."]}
+    "Every time list opens at 12:00 pm (noon) instead of midnight."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -886,17 +896,15 @@ function addDaysStr(d,n){const [y,m,dd]=d.split("-").map(Number);return new Date
 /* Default on-call window from the picked date: Sat -> Mon 00:00, Fri -> Mon 00:00, other days -> next day. */
 function lastOnCall(){return workEntries().filter(e=>e.type==="oncall"&&e.ocStart&&e.ocEnd).sort((a,b)=>(b.created||0)-(a.created||0))[0];}
 /* Fill the on-call window for the picked start date: copy the last on-call's start time, length and level; otherwise Sat->Mon style defaults. */
+/* Default on-call window (Settings): Fri 2:00 pm → Mon 6:00 am unless changed.
+   Tapping a day inside a window (Fri–Mon) uses that window; any other day uses the next one. */
+function ocDefaults(){ return {...DEFAULTS.ocDefault,...(settings.ocDefault||{})}; }
 function fillOcWindow(d){
-  const last=lastOnCall();
-  if(last){
-    const t=last.ocStart.slice(11,16), dur=toMs(last.ocEnd)-toMs(last.ocStart);
-    $("ocStart").value=d+"T"+t; $("ocEnd").value=new Date(toMs(d+"T"+t)+dur).toISOString().slice(0,16); setOcLevel(last.level||"OA");
-    $("ocFillHint").textContent="Copied from your last on-call ("+dtShort(last.ocStart)+" → "+dtShort(last.ocEnd)+"). Tap the day your on-call starts. If you work during it, log the overtime or callback separately and those hours come off the on-call time (22.14).";
-  }else{
-    const dow=pd(d).getDay(), span=dow===6?2:dow===5?3:1; $("ocStart").value=d+"T00:00"; $("ocEnd").value=addDaysStr(d,span)+"T00:00";
-    $("ocFillHint").textContent="Tapping a Saturday fills in Sat 12:00am to Mon 12:00am. Change it to match your designation; next time the app copies it. If you work during it, log the overtime or callback separately and those hours come off the on-call time (22.14).";
-  }
-  if(!$("ocUntil").value||$("ocUntil").value<d) $("ocUntil").value=addDaysStr(d,7*12);
+  const W=ocDefaults(), span=((W.eDay-W.sDay+7)%7)||7, off=(pd(d).getDay()-W.sDay+7)%7;
+  const start=off<=span?addDaysStr(d,-off):addDaysStr(d,7-off);
+  $("ocStart").value=start+"T"+W.sTime; $("ocEnd").value=addDaysStr(start,span)+"T"+W.eTime; $("fDate").value=start; calMonth=start.slice(0,7); sheetDateTxt();
+  $("ocFillHint").textContent="Filled with your usual on-call window ("+DAYNAME[W.sDay]+" "+tLabel(W.sTime)+" → "+DAYNAME[W.eDay]+" "+tLabel(W.eTime)+"). Change the dates or times if this one is different; the default is in Settings. If you work during it, log the overtime or callback separately and those hours come off the on-call time (22.14).";
+  if(!$("ocUntil").value||$("ocUntil").value<start) $("ocUntil").value=addDaysStr(start,7*12);
   repeatHint();
 }
 function repeatHint(){
@@ -1470,10 +1478,11 @@ function payHint(){const v=$("sPayStart").value||DEFAULTS.payStart, c=payPeriod(
   const [y,m,d]=c.end.split("-").map(Number), nx=payPeriod(new Date(Date.UTC(y,m-1,d+1)).toISOString().slice(0,10),v);
   $("payHint").textContent="Pay periods repeat every 14 days. Current: PP "+n+", "+shortD(c.start)+" – "+shortD(c.end)+". Next: PP "+(ppNumber(nx.start,v,Number($("sPpNum").value)-ppNumber(today(),v,0)||0))+", "+shortD(nx.start)+" – "+shortD(nx.end)+". PP 1 is the first pay period ending in January.";}
 $("sPayStart").addEventListener("change",payHint); $("sPpNum").addEventListener("input",payHint);
-function fillSettings(){ { const c=claimRates(); $("sClB").value=c.b; $("sClL").value=c.l; $("sClD").value=c.d; $("sClInc").value=c.inc; $("sClKm").value=c.km; $("sClPriv").value=c.priv; $("sClAsOf").value=c.asOf; }const sh=settings.shift||DEFAULTS.shift;$("sShiftStart").value=sh.start;$("sShiftEnd").value=sh.end;$("sRate").value=settings.rate;$("sLtoOt").value=(settings.ltoStart||{}).ot||0;$("sLtoOc").value=(settings.ltoStart||{}).oc||0;$("sLtoAsOf").value=settings.ltoAsOf||today();$("sSalary").value=settings.salary??DEFAULTS.salary;$("sTaxBase").value=settings.taxBase??DEFAULTS.taxBase;$("sCpp").checked=settings.payCpp??DEFAULTS.payCpp;$("sEi").checked=settings.payEi??DEFAULTS.payEi;$("sCur").value=settings.currency;$("sPayStart").value=settings.payStart||DEFAULTS.payStart;$("sPpNum").value=ppNo(today());payHint();schedDraft=[...(settings.sched||DEFAULTS.sched)];renderSched();}
+for(const id of ["sOcSDay","sOcEDay"]) DAYNAME.forEach((n,i)=>$(id).add(new Option(n,String(i))));
+function fillSettings(){ { const W=ocDefaults(); $("sOcSDay").value=String(W.sDay); $("sOcSTime").value=W.sTime; $("sOcEDay").value=String(W.eDay); $("sOcETime").value=W.eTime; } { const c=claimRates(); $("sClB").value=c.b; $("sClL").value=c.l; $("sClD").value=c.d; $("sClInc").value=c.inc; $("sClKm").value=c.km; $("sClPriv").value=c.priv; $("sClAsOf").value=c.asOf; }const sh=settings.shift||DEFAULTS.shift;$("sShiftStart").value=sh.start;$("sShiftEnd").value=sh.end;$("sRate").value=settings.rate;$("sLtoOt").value=(settings.ltoStart||{}).ot||0;$("sLtoOc").value=(settings.ltoStart||{}).oc||0;$("sLtoAsOf").value=settings.ltoAsOf||today();$("sSalary").value=settings.salary??DEFAULTS.salary;$("sTaxBase").value=settings.taxBase??DEFAULTS.taxBase;$("sCpp").checked=settings.payCpp??DEFAULTS.payCpp;$("sEi").checked=settings.payEi??DEFAULTS.payEi;$("sCur").value=settings.currency;$("sPayStart").value=settings.payStart||DEFAULTS.payStart;$("sPpNum").value=ppNo(today());payHint();schedDraft=[...(settings.sched||DEFAULTS.sched)];renderSched();}
 $("setForm").addEventListener("submit",async ev=>{
   ev.preventDefault();
-  settings={claims:{b:Number($("sClB").value)||0,l:Number($("sClL").value)||0,d:Number($("sClD").value)||0,inc:Number($("sClInc").value)||0,km:Number($("sClKm").value)||0,priv:Number($("sClPriv").value)||0,asOf:$("sClAsOf").value||DEFAULTS.claims.asOf},ltoStart:{ot:Math.max(0,Number($("sLtoOt").value)||0),oc:Math.max(0,Number($("sLtoOc").value)||0)},ltoAsOf:$("sLtoAsOf").value||today(),salary:Math.max(0,Number($("sSalary").value)||0),taxBase:Math.max(0,Number($("sTaxBase").value)||0),payCpp:$("sCpp").checked,payEi:$("sEi").checked,rate:Math.max(0,Number($("sRate").value)||0),currency:$("sCur").value||"$",sched:[...schedDraft],payStart:$("sPayStart").value||DEFAULTS.payStart,ppOffset:(Number($("sPpNum").value)||0)-ppNumber(today(),$("sPayStart").value||DEFAULTS.payStart,0),shift:{start:$("sShiftStart").value||DEFAULTS.shift.start,end:$("sShiftEnd").value||DEFAULTS.shift.end}}; render(); updatePreview();
+  settings={ocDefault:{sDay:Number($("sOcSDay").value),sTime:$("sOcSTime").value,eDay:Number($("sOcEDay").value),eTime:$("sOcETime").value},claims:{b:Number($("sClB").value)||0,l:Number($("sClL").value)||0,d:Number($("sClD").value)||0,inc:Number($("sClInc").value)||0,km:Number($("sClKm").value)||0,priv:Number($("sClPriv").value)||0,asOf:$("sClAsOf").value||DEFAULTS.claims.asOf},ltoStart:{ot:Math.max(0,Number($("sLtoOt").value)||0),oc:Math.max(0,Number($("sLtoOc").value)||0)},ltoAsOf:$("sLtoAsOf").value||today(),salary:Math.max(0,Number($("sSalary").value)||0),taxBase:Math.max(0,Number($("sTaxBase").value)||0),payCpp:$("sCpp").checked,payEi:$("sEi").checked,rate:Math.max(0,Number($("sRate").value)||0),currency:$("sCur").value||"$",sched:[...schedDraft],payStart:$("sPayStart").value||DEFAULTS.payStart,ppOffset:(Number($("sPpNum").value)||0)-ppNumber(today(),$("sPayStart").value||DEFAULTS.payStart,0),shift:{start:$("sShiftStart").value||DEFAULTS.shift.start,end:$("sShiftEnd").value||DEFAULTS.shift.end}}; render(); updatePreview();
   try{await store.saveSettings(settings);flash("Settings saved");}catch(x){flash("Couldn't save settings. Try again.",true);}
 });
 
