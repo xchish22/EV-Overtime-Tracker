@@ -185,7 +185,7 @@ details.settings>summary{cursor:pointer;padding:14px 16px;font-family:var(--f-di
 .day .gauge{position:absolute;top:0;bottom:0;width:0;background:var(--oc);z-index:0;pointer-events:none}
 
 .day.oc .rt{background:var(--surface);border-radius:3px;padding:1px 3px}
-.day.oc .eh{background:var(--oc-ink);color:var(--oc)}
+.day.oc .eh{background:var(--surface);color:var(--otc)}
 .day.oc .eh.ok{background:var(--ok);color:var(--oc-ink)}
 .ocbox{grid-column:1/-1;display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:10px;border:1px solid var(--oc)}
 .ocbox .seg label{flex:1;position:relative;text-align:center;padding:10px 6px;font-weight:600;cursor:pointer;min-height:44px;font-size:.9rem;color:var(--ink)}
@@ -892,17 +892,15 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.17.2";
+const APP_VERSION="2.17.3";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.17.3",date:"2026-11-08",kind:"patch",notes:[
+    "Calendar day numbers show only overtime, callbacks and court worked. On call shows as the blue fill; tap the day for its hours and pay."]},
   {v:"2.17.2",date:"2026-11-08",kind:"patch",notes:[
     "Dates use a regular hyphen (Nov-12-2026) everywhere, including travel expense days and trip dates."]},
   {v:"2.17.1",date:"2026-11-08",kind:"patch",notes:[
-    "Vacation bar now fills up as you use hours and reads like 174 / 200 hrs, with hours left shown underneath."]},
-  {v:"2.17.0",date:"2026-11-08",kind:"minor",notes:[
-    "Vacation years start at 200 hrs (was 400).",
-    "Enter the vacation hours you've already used (for example 174) instead of hours left; the bar subtracts it from 200.",
-    "All dates now read like Nov-16-2026."]}
+    "Vacation bar now fills up as you use hours and reads like 174 / 200 hrs, with hours left shown underneath."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -1547,7 +1545,7 @@ function renderCal(){
   for(const e of workEntries()){
     if(e.type==="oncall"&&e.ocStart&&e.ocEnd) ocWins.push([toMs(e.ocStart),toMs(e.ocEnd)]);
     else if(e.start&&e.end){ const a=toMs(e.date+"T"+e.start); let z=toMs(e.date+"T"+e.end); if(z<=a) z+=86400000; otWins.push([a,z]); }
-    (byDate[e.date]=byDate[e.date]||[]).push(e);
+    if(e.type!=="oncall") (byDate[e.date]=byDate[e.date]||[]).push(e);   /* day number = time worked; on call shows as the blue fill */
   }
   if($("fType").value==="oncall"&&$("ocStart").value&&$("ocEnd").value&&!editingId) ocWins.push([toMs($("ocStart").value),toMs($("ocEnd").value)]);
   const sel=$("fDate").value, td=today(), sch=settings.sched||DEFAULTS.sched;
