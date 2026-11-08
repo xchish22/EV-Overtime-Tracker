@@ -152,6 +152,7 @@ details.settings>summary{cursor:pointer;padding:14px 16px;font-family:var(--f-di
 .vbar{position:relative;height:26px;border-radius:13px;background:color-mix(in srgb,var(--vac) 16%,var(--surface));border:1px solid var(--vac);overflow:hidden}
 .vbar .vfill{position:absolute;left:0;top:0;bottom:0;background:var(--vac)}
 .vbar .ptext{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-family:var(--f-mono);font-size:.8rem;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.vbar.over .vfill{background:var(--bad)}
 .vbar.over{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 16%,var(--surface))}
 .vhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .vfoot{font-size:.82rem;color:var(--muted)}
@@ -662,14 +663,14 @@ details.settings[open]>summary::after{content:"－"}
       <div class="vacfy"><button type="button" id="vacPrev" aria-label="Previous vacation year">‹</button><strong id="vacFy"></strong><button type="button" id="vacNext" aria-label="Next vacation year">›</button></div>
       <div id="vacBank"></div>
       <div class="field"><label for="vacAllot">Vacation hours for this year</label><input type="number" id="vacAllot" inputmode="decimal" min="0" step="0.25"></div>
-      <p class="hint">Vacation years run April 1 to March 31. Each year starts at 400 hrs; change it here if a year has a different amount (carry-over, for example).</p>
+      <p class="hint">Vacation years run April 1 to March 31. Each year starts at 200 hrs; change it here if a year has a different amount (carry-over, for example).</p>
       <div class="field"><span class="label">Already used some this year?</span>
         <div class="vgrid">
-          <div class="field"><label for="vacLeft">Hours left</label><input type="number" id="vacLeft" inputmode="decimal" min="0" step="0.25" placeholder="from leave record"></div>
+          <div class="field"><label for="vacLeft">Hours already used</label><input type="number" id="vacLeft" inputmode="decimal" min="0" step="0.25" placeholder="e.g. 174"></div>
           <div class="field"><label for="vacAsOf">As of</label><input type="date" id="vacAsOf"></div>
         </div>
-        <p class="hint" id="vacStartHint">Enter what your leave record shows is left, and the date it's from. Vacation you log after that date comes off it, so you don't need to enter the days you already took.</p>
-        <button type="button" class="usebtn vclear" id="vacClear" hidden>Clear starting balance</button>
+        <p class="hint" id="vacStartHint">Enter the hours you've already used this year (from your leave record) and the date that's up to. You don't need to log those days; vacation you log after that date comes off what's left.</p>
+        <button type="button" class="usebtn vclear" id="vacClear" hidden>Clear hours already used</button>
       </div>
       <button type="button" class="btn-primary" id="vacAdd">+ Log vacation</button>
       <div id="vacList"></div>
@@ -776,7 +777,9 @@ const r2=x=>Math.round(x*100)/100;
 function dateRange(a,b){ const out=[]; if(!a||!b||b<a) return out; let [y,m,d]=a.split("-").map(Number);
   for(let i=0;i<120;i++){ const s=new Date(Date.UTC(y,m-1,d+i)).toISOString().slice(0,10); if(s>b) break; out.push(s);} return out; }
 const SDOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const dayLbl=ds=>{const [y,m,d]=ds.split("-").map(Number);return SDOW[new Date(y,m-1,d).getDay()]+" "+ ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m-1]+" "+d;};
+/* Dates read like Nov-12-2026. The invisible word joiners (U+2060) around each plain hyphen stop a date splitting across two lines. */
+const DJ="\u2060-\u2060";
+const dayLbl=ds=>{const [y,m,d]=ds.split("-").map(Number);return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m-1]+DJ+String(d).padStart(2,"0")+DJ+y;};
 /* Accommodation lines for a trip: [{kind:"hotel"|"private", nights, amt, receipt}]. Trips saved per night are grouped into lines. */
 function tripLodgings(e){
   if(Array.isArray(e.lodgings)) return e.lodgings.filter(l=>l.kind==="hotel"||l.kind==="private").map(l=>({kind:l.kind,nights:Math.max(1,Number(l.nights)||1),amt:Number(l.amt)||0,receipt:!!l.receipt,desc:l.desc||""}));
@@ -889,15 +892,17 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.16.1";
+const APP_VERSION="2.17.2";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
-  {v:"2.16.1",date:"2026-11-08",kind:"patch",notes:[
-    "Vacation log marks future dates as Upcoming (and a vacation under way as Now), and the bar shows how many hours are upcoming."]},
-  {v:"2.16.0",date:"2026-11-08",kind:"minor",notes:[
-    "Vacation starting balance: enter the hours left from your leave record and the date, so you don't need to log days you already took.",
-    "Log several vacation dates at once with + Add another vacation date.",
-    "Tap a vacation day on the calendar to edit or delete it, or pick Vacation in the day pop-up to add one."]}
+  {v:"2.17.2",date:"2026-11-08",kind:"patch",notes:[
+    "Dates use a regular hyphen (Nov-12-2026) everywhere, including travel expense days and trip dates."]},
+  {v:"2.17.1",date:"2026-11-08",kind:"patch",notes:[
+    "Vacation bar now fills up as you use hours and reads like 174 / 200 hrs, with hours left shown underneath."]},
+  {v:"2.17.0",date:"2026-11-08",kind:"minor",notes:[
+    "Vacation years start at 200 hrs (was 400).",
+    "Enter the vacation hours you've already used (for example 174) instead of hours left; the bar subtracts it from 200.",
+    "All dates now read like Nov-16-2026."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -951,8 +956,10 @@ const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 let settings={...DEFAULTS}, entries={}, store=null, editingId=null, filter="wait";
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
 const pd=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);};
-const nice=s=>{const d=pd(s);return DOW[d.getDay()]+" "+MON[d.getMonth()].slice(0,3)+" "+d.getDate();};
-const dtShort=v=>{const [d,t]=v.split("T");return nice(d).slice(0,3)+" "+shortD(d)+", "+tLabel(t||"00:00");};
+/* All dates read like Nov-16-2026. */
+const fmtD=dayLbl;
+const nice=fmtD;
+const dtShort=v=>{const [d,t]=v.split("T");return fmtD(d)+", "+tLabel(t||"00:00");};
 /* "When" line, same style for every entry type. */
 function whenTxt(e){
   if(e.type==="oncall"&&e.ocStart&&e.ocEnd) return dtShort(e.ocStart)+" → "+dtShort(e.ocEnd);
@@ -1007,7 +1014,7 @@ function setMode(){const ty=$("fType").value, oc=ty==="oncall", cl=ty==="claim";
   document.querySelector("#otForm .compf").hidden=cl; if(cl) claimUI();
   sheetDateTxt();
   if(oc&&!$("ocStart").value) fillOcWindow($("fDate").value||today());}
-const shortD=s=>{const d=pd(s);return MON[d.getMonth()].slice(0,3)+" "+d.getDate();};
+const shortD=fmtD;
 const money=n=>settings.currency+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const hrs=n=>(Math.round(n*100)/100).toString();
 const multTxt=m=>m==1.5?"1.5×":m==2?"2×":(Math.round(m*100)/100)+"×";
@@ -1137,7 +1144,7 @@ function render(){
     const pp=payPeriod(key,settings.payStart), grp=shown.filter(x=>payPeriod(x.date,settings.payStart).start===key);
     const card=document.createElement("div"); card.className="pcard"; card.dataset.key=key;
     const h=document.createElement("div"); h.className="phead";
-    const a=document.createElement("div"); a.className="ptitle"; a.textContent="PP "+ppNo(pp.start)+" · "+shortD(pp.start)+" – "+shortD(pp.end)+", "+pp.end.slice(0,4);
+    const a=document.createElement("div"); a.className="ptitle"; a.textContent="PP "+ppNo(pp.start)+" · "+shortD(pp.start)+" – "+shortD(pp.end);
     if(key===cur){const c=document.createElement("span");c.className="tag cur";c.textContent="Current";a.append(c);}
     const gc=grp.filter(x=>x.comp!=="lto").reduce((t,x)=>t+amountOf(x),0);
     const b=document.createElement("div"); b.className="num psum"; const gn=sumNet(grp); b.textContent=hrs(grp.filter(x=>x.type!=="claim").reduce((t,x)=>t+paidHours(x),0))+" hrs · "+money(gc)+(gn?" (≈ "+money(gn)+" take-home)":"")+" · "+nEntries(grp.length);
@@ -1359,7 +1366,7 @@ function openSheet(ds){
 function sheetDateTxt(){
   const v=$("fDate").value||today(), d=pd(v), kind=(settings.sched||DEFAULTS.sched)[d.getDay()];
   const k=kind==="rto"?" · Regular time off":kind==="tow"?" · Time off work":"";
-  $("sheetDate").textContent=($("fType").value==="oncall"?"On call starting ":"")+DAYNAME[d.getDay()]+", "+MON[d.getMonth()]+" "+d.getDate()+", "+d.getFullYear()+k;
+  $("sheetDate").textContent=($("fType").value==="oncall"?"On call starting ":"")+DAYNAME[d.getDay()]+", "+fmtD(v)+k;
 }
 /* Entries already logged on the picked day, so they can be opened from the pop-up. */
 /* Entries already logged on the picked day, shown in full (times, pay, status, notes) with Edit and Confirm. */
@@ -1611,14 +1618,14 @@ function localStore(){
 }
 function renderVersion(){
   $("verChip").textContent="v"+APP_VERSION;
-  const cur=CHANGELOG[0]; $("aboutLine").textContent="Overtime Tracker v"+APP_VERSION+" · released "+nice(cur.date)+", "+cur.date.slice(0,4)+" · data format "+DATA_SCHEMA;
+  const cur=CHANGELOG[0]; $("aboutLine").textContent="Overtime Tracker v"+APP_VERSION+" · released "+nice(cur.date)+" · data format "+DATA_SCHEMA;
   const C=$("changelog"); C.textContent="";
   for(const r of CHANGELOG.slice(0,3)){
     const box=document.createElement("div"); box.className="rel";
     const h=document.createElement("div"); h.className="rh";
     const v=document.createElement("span"); v.className="rv"; v.textContent="v"+r.v;
     const k=document.createElement("span"); k.className="kind "+r.kind; k.textContent=r.kind;
-    const d=document.createElement("span"); d.className="small"; d.textContent=nice(r.date)+", "+r.date.slice(0,4);
+    const d=document.createElement("span"); d.className="small"; d.textContent=nice(r.date);
     h.append(v,k,d); const ul=document.createElement("ul"); for(const n of r.notes){const li=document.createElement("li");li.textContent=n;ul.append(li);}
     box.append(h,ul); C.append(box);
   }
@@ -1634,7 +1641,7 @@ const claimRates=()=>({...DEFAULTS.claims,...(settings.claims||{})});
 function nextRateDate(asOf){ const y=Number(asOf.slice(0,4)); for(const d of [y+"-04-01",y+"-10-01",(y+1)+"-04-01"]) if(d>asOf) return d; return (y+1)+"-04-01"; }
 function renderRateWarn(){
   const c=claimRates(), nx=nextRateDate(c.asOf), due=today()>=nx; $("rateWarn").hidden=!due;
-  if(due) $("rateWarnTxt").textContent="Meal and mileage rates may have changed on "+nice(nx)+", "+nx.slice(0,4)+". Check the NJC tables and update them in Settings.";
+  if(due) $("rateWarnTxt").textContent="Meal and mileage rates may have changed on "+nice(nx)+". Check the NJC tables and update them in Settings.";
 }
 $("rateWarnGo").onclick=()=>{ const d=document.querySelector("details.settings"); d.open=true; $("sClB").scrollIntoView({behavior:"smooth",block:"center"}); setTimeout(()=>$("sClB").focus(),300); };
 let clRates=null;   /* rates used by the claim being edited */
@@ -1752,7 +1759,7 @@ function claimUI(){
     $("cl_"+k+"_r").textContent=money(R[k]); $("cl_"+k+"_uw").hidden=!on; $("cl_"+k+"_aw").hidden=!(on&&u);
     $("cl_"+k+"_al").textContent="Actual amount (up to "+money(R[k])+")"; $("cl_"+k+"_a").max=R[k]; }
   $("clIncR").textContent=money(R.inc);
-  $("clRateNote").textContent="Rates effective "+nice(R.asOf)+", "+R.asOf.slice(0,4)+" · mileage = km × "+money(R.km)+" (BC). Under 16 km, enter what you actually spent (capped at the meal's rate) and keep the receipt; meals 16 km or more away don't need one. Other expenses need receipts.";
+  $("clRateNote").textContent="Rates effective "+nice(R.asOf)+" · mileage = km × "+money(R.km)+" (BC). Under 16 km, enter what you actually spent (capped at the meal's rate) and keep the receipt; meals 16 km or more away don't need one. Other expenses need receipts.";
 }
 function claimDraft(){
   if(clMode()==="trip") return tripDraft();
@@ -1812,7 +1819,7 @@ $("ltoSave").onclick=async()=>{
 };
 
 /* ---------- vacation (years run Apr 1 to Mar 31) ---------- */
-const VAC_DEFAULT=400;
+const VAC_DEFAULT=200;
 const fyOf=ds=>{const [y,m]=ds.split("-").map(Number); return m>=4?y:y-1;};
 const shiftHrs=()=>{const sh=settings.shift||DEFAULTS.shift; let d=mins(sh.end)-mins(sh.start); if(d<=0) d+=1440; return d/60;};
 /* Days in a vacation entry that count: your scheduled work days. */
@@ -1821,37 +1828,40 @@ const vacOn=ds=>vacEntries().filter(e=>ds>=e.date&&ds<=(e.endDate||e.date));
 const vacRangeTxt=e=>nice(e.date)+(e.endDate&&e.endDate!==e.date?" – "+nice(e.endDate):"");
 const vacAllot=y=>{const v=(settings.vacAllot||{})[y]; return v!=null&&v!==""?Number(v):VAC_DEFAULT;};
 /* Optional starting balance per year: hours left as of a date. Entries dated on or before it are already counted. */
-const vacStart=y=>{const st=(settings.vacStart||{})[y]; return st&&st.asOf&&st.left!=null?st:null;};
+const vacStart=y=>{const st=(settings.vacStart||{})[y]; if(!st||!st.asOf) return null;
+  if(st.used!=null) return st; if(st.left!=null) return {...st,used:Math.max(0,vacAllot(y)-Number(st.left))};   /* older "hours left" balances */
+  return null;};
 const vacIncluded=e=>{const st=vacStart(fyOf(e.date)); return !!st&&e.date<=st.asOf;};
 function vacBal(y){
   const al=vacAllot(y), st=vacStart(y), list=vacEntries().filter(e=>fyOf(e.date)===y);
   const logged=list.filter(e=>!vacIncluded(e)).reduce((t,e)=>t+(Number(e.hours)||0),0);
-  const left=(st?Number(st.left):al)-logged;
+  const left=al-(st?Number(st.used):0)-logged;
   return {al,st,logged,left,used:al-left};
 }
 async function saveVacSettings(msg){ try{await store.saveSettings(settings); if(msg) flash(msg);}catch(x){flash("Couldn't save. Try again.",true);} }
 let vacFy=fyOf(today()), vacEditId=null;
+const fyEnd=y=>(y+1)+"-03-31";
 const fyTxt=y=>y+"–"+String(y+1).slice(2);
 function renderVac(){
-  const y=vacFy, B0=vacBal(y), {al,st,left}=B0, over=left<0;
-  $("vacSum").textContent=hrs(vacBal(fyOf(today())).left)+" hrs left";
-  $("vacFy").textContent="Apr 1, "+y+" – Mar 31, "+(y+1);
+  const y=vacFy, B0=vacBal(y), {al,st,left,used}=B0, over=left<0;
+  { const C=vacBal(fyOf(today())); $("vacSum").textContent=hrs(C.used)+" / "+hrs(C.al)+" hrs used"; }
+  $("vacFy").textContent=fmtD(y+"-04-01")+" – "+fmtD((y+1)+"-03-31");
   if(document.activeElement!==$("vacAllot")) $("vacAllot").value=al;
-  if(document.activeElement!==$("vacLeft")) $("vacLeft").value=st?st.left:"";
+  if(document.activeElement!==$("vacLeft")) $("vacLeft").value=st?st.used:"";
   if(document.activeElement!==$("vacAsOf")) $("vacAsOf").value=st?st.asOf:"";
   $("vacClear").hidden=!st;
   const B=$("vacBank"); B.textContent="";
   const head=document.createElement("div"); head.className="vhead";
-  const nm=document.createElement("span"); nm.className="label"; nm.textContent="Vacation left";
-  const val=document.createElement("span"); val.className="num bval"; val.textContent=hrs(left)+" / "+hrs(al)+" hrs"; head.append(nm,val);
+  const nm=document.createElement("span"); nm.className="label"; nm.textContent="Vacation used";
+  const val=document.createElement("span"); val.className="num bval"; val.textContent=hrs(used)+" / "+hrs(al)+" hrs"; head.append(nm,val);
   const bar=document.createElement("div"); bar.className="vbar"+(over?" over":""); bar.setAttribute("role","progressbar");
-  bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax",String(al)); bar.setAttribute("aria-valuenow",String(Math.max(0,Math.round(left*100)/100))); bar.setAttribute("aria-label","Vacation left: "+hrs(left)+" of "+hrs(al)+" hours");
-  const f=document.createElement("span"); f.className="vfill"; f.style.width=(al>0?Math.min(100,Math.max(0,left/al*100)):0)+"%";
-  const tx=document.createElement("span"); tx.className="ptext"; tx.textContent=hrs(Math.max(0,left))+" hrs"; bar.append(f,tx);
+  bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax",String(al)); bar.setAttribute("aria-valuenow",String(Math.max(0,Math.round(used*100)/100))); bar.setAttribute("aria-label","Vacation used: "+hrs(used)+" of "+hrs(al)+" hours, "+hrs(left)+" left");
+  const f=document.createElement("span"); f.className="vfill"; f.style.width=(al>0?Math.min(100,Math.max(0,used/al*100)):100)+"%";
+  const tx=document.createElement("span"); tx.className="ptext"; tx.textContent=hrs(used)+" / "+hrs(al)+" hrs"; bar.append(f,tx);
   const foot=document.createElement("div"); foot.className="vfoot"+(over?" over":""); const sh=shiftHrs();
-  const src=st?hrs(st.left)+" left on "+nice(st.asOf)+(B0.logged?" − "+hrs(B0.logged)+" logged since":""):hrs(B0.used)+" hrs used";
+  const src=st?hrs(st.used)+" hrs used to "+nice(st.asOf)+(B0.logged?" + "+hrs(B0.logged)+" logged since":""):hrs(B0.used)+" hrs used";
   const booked=vacEntries().filter(e=>fyOf(e.date)===y&&e.date>today()&&!vacIncluded(e)).reduce((t,e)=>t+(Number(e.hours)||0),0);
-  foot.textContent=over?"Over by "+hrU(-left)+". Check your entries or the starting balance.":src+(booked?" (incl. "+hrs(booked)+" hrs upcoming)":"")+" · ≈ "+hrs(Math.round(left/sh*100)/100)+" days left at "+hrs(sh)+" hrs a day";
+  foot.textContent=over?"Over by "+hrU(-left)+". Check your entries or the hours already used.":hrs(left)+" hrs left (≈ "+hrs(Math.round(left/sh*100)/100)+" days at "+hrs(sh)+" hrs) · "+src+(booked?" (incl. "+hrs(booked)+" hrs upcoming)":"");
   B.append(head,bar,foot);
   const L=$("vacList"); L.textContent="";
   const list=vacEntries().filter(e=>fyOf(e.date)===y).sort((a,b)=>b.date.localeCompare(a.date));
@@ -1863,7 +1873,7 @@ function renderVac(){
     { const td=today(), fut=e.date>td, now=!fut&&(e.endDate||e.date)>=td;
       if(fut||now){ const tg=document.createElement("span"); tg.className="tag vtag"+(now?" now":""); tg.textContent=now?"Now":"Upcoming"; a.append(" ",tg); r.classList.add("fut"); } }
     t.append(a); if(e.note){const n=document.createElement("small"); n.textContent=e.note; t.append(n);}
-    if(vacIncluded(e)){const n=document.createElement("small"); n.className="inc"; n.textContent="Already counted in your starting balance"; t.append(n);}
+    if(vacIncluded(e)){const n=document.createElement("small"); n.className="inc"; n.textContent="Already counted in your hours used"; t.append(n);}
     const bx=document.createElement("div"); bx.className="vbtns";
     const ed=document.createElement("button"); ed.type="button"; ed.textContent="Edit"; ed.onclick=()=>openVac(e);
     const d=document.createElement("button"); d.type="button"; d.className="danger"; d.textContent="Delete";
@@ -1944,16 +1954,18 @@ $("vacAllot").addEventListener("change",async()=>{
   await saveVacSettings("Vacation hours for "+fyTxt(vacFy)+" saved");
 });
 async function vacStartChanged(){
-  const lv=$("vacLeft").value, d=$("vacAsOf").value;
-  if(lv===""||!d){ $("vacStartHint").textContent=lv===""&&!d?"Enter what your leave record shows is left, and the date it's from. Vacation you log after that date comes off it, so you don't need to enter the days you already took.":"Enter both the hours left and the date to use a starting balance."; return; }
-  if(fyOf(d)!==vacFy){ $("vacStartHint").textContent="Pick a date between Apr 1, "+vacFy+" and Mar 31, "+(vacFy+1)+" (the year shown above)."; return; }
-  settings={...settings,vacStart:{...(settings.vacStart||{}),[vacFy]:{left:Math.max(0,Math.round(Number(lv)*100)/100),asOf:d}}}; render();
-  $("vacStartHint").textContent="Starting balance saved: "+hrs(Number(lv))+" hrs left on "+nice(d)+". Vacation you log after that date comes off it.";
-  await saveVacSettings("Vacation balance saved");
+  const lv=$("vacLeft").value; let d=$("vacAsOf").value;
+  if(lv===""){ $("vacStartHint").textContent=d?"Enter the hours you've already used to use a starting balance.":"Enter the hours you've already used this year (from your leave record) and the date that's up to. You don't need to log those days; vacation you log after that date comes off what's left."; return; }
+  if(!d){ d=fyOf(today())===vacFy?today():fyEnd(vacFy); $("vacAsOf").value=d; }
+  if(fyOf(d)!==vacFy){ $("vacStartHint").textContent="Pick a date between Apr-01-"+vacFy+" and Mar-31-"+(vacFy+1)+" (the year shown above)."; return; }
+  const u=Math.max(0,Math.round(Number(lv)*100)/100);
+  settings={...settings,vacStart:{...(settings.vacStart||{}),[vacFy]:{used:u,asOf:d}}}; render();
+  $("vacStartHint").textContent="Saved: "+hrs(u)+" hrs used up to "+nice(d)+", so "+hrs(vacBal(vacFy).left)+" hrs left. Vacation you log after "+nice(d)+" comes off that.";
+  await saveVacSettings("Vacation used hours saved");
 }
 $("vacLeft").addEventListener("change",vacStartChanged); $("vacAsOf").addEventListener("change",vacStartChanged);
 $("vacClear").onclick=async()=>{ const o={...(settings.vacStart||{})}; delete o[vacFy]; settings={...settings,vacStart:o}; render();
-  $("vacStartHint").textContent="Starting balance cleared. The year starts at "+hrs(vacAllot(vacFy))+" hrs again."; await saveVacSettings("Vacation balance cleared"); };
+  $("vacStartHint").textContent="Cleared. The year starts at "+hrs(vacAllot(vacFy))+" hrs again."; await saveVacSettings("Vacation balance cleared"); };
 /* ---------- backup & restore ---------- */
 const BK_KEY="ot-last-backup";
 function lastBackup(){ try{return localStorage.getItem(BK_KEY);}catch(x){return null;} }
@@ -1961,7 +1973,7 @@ function renderBackup(){
   const lb=lastBackup(), el=$("bkLast");
   if(!lb){ el.textContent="No backup yet. Back up regularly so a lost or reset phone doesn't lose your entries."; el.className="small bkwarn"; }
   else{ const days=Math.floor((Date.now()-Number(lb))/86400000), d=new Date(Number(lb));
-    el.textContent="Last backup: "+DOW[d.getDay()]+" "+MON[d.getMonth()].slice(0,3)+" "+d.getDate()+", "+d.getFullYear()+(days>=14?" ("+days+" days ago, time for a new one)":"");
+    el.textContent="Last backup: "+fmtD(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"))+(days>=14?" ("+days+" days ago, time for a new one)":"");
     el.className="small"+(days>=14?" bkwarn":""); }
   $("bkHow").textContent=window.claude?.use
     ? "Saves a backup file straight to your Google Drive (Google Drive needs to be connected in claude.ai Settings → Connectors). If it isn't, you can save the file instead."
