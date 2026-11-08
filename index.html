@@ -273,6 +273,11 @@ select.tgrey:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(1)}
 .ocdef .ocarrow{grid-column:1/-1;text-align:center;color:var(--muted);line-height:1}
 .ocdef select{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);min-width:0}
 .clother{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+.tnight.lodg{grid-template-columns:1.3fr 1fr auto}
+.tnight.lodg input[type=number][placeholder],.tnight.lodg .privamt,.tnight.lodg .ckline{grid-column:1/-1}
+.nfield{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted)}
+.nfield input{width:100%;min-height:40px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
+.privamt{font-size:.88rem;color:var(--ink)}
 .olist{display:flex;flex-direction:column;gap:8px}
 .orow{display:grid;grid-template-columns:1.5fr 1fr auto;gap:8px;align-items:center;padding:8px;border-radius:10px;background:var(--bg)}
 .orow input[type=text],.orow input[type=number]{width:100%;min-height:42px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-width:0}
@@ -476,6 +481,7 @@ details.settings[open]>summary::after{content:"－"}
           <div id="tpDays" class="tpdays"></div>
           <span class="label">Accommodation</span>
           <div id="tpNights" class="tpdays"></div>
+          <button type="button" class="addexp" id="tpAddLodg">+ Add accommodation</button>
         </div>
         <div class="field"><label for="clKm">Mileage: kilometres driven</label><input type="number" id="clKm" inputmode="decimal" min="0" step="0.1" placeholder="0"></div>
         <span class="label">Other expenses</span>
@@ -700,13 +706,21 @@ function dateRange(a,b){ const out=[]; if(!a||!b||b<a) return out; let [y,m,d]=a
   for(let i=0;i<120;i++){ const s=new Date(Date.UTC(y,m-1,d+i)).toISOString().slice(0,10); if(s>b) break; out.push(s);} return out; }
 const SDOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const dayLbl=ds=>{const [y,m,d]=ds.split("-").map(Number);return SDOW[new Date(y,m-1,d).getDay()]+" "+ ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m-1]+" "+d;};
+/* Accommodation lines for a trip: [{kind:"hotel"|"private", nights, amt, receipt}]. Trips saved per night are grouped into lines. */
+function tripLodgings(e){
+  if(Array.isArray(e.lodgings)) return e.lodgings.filter(l=>l.kind==="hotel"||l.kind==="private").map(l=>({kind:l.kind,nights:Math.max(1,Number(l.nights)||1),amt:Number(l.amt)||0,receipt:!!l.receipt,desc:l.desc||""}));
+  const out=[]; for(const n of e.nights||[]){ if(n.kind==="hotel") out.push({kind:"hotel",nights:1,amt:Number(n.amt)||0,receipt:!!n.receipt,desc:""});
+    else if(n.kind==="private"){ const p=out.find(x=>x.kind==="private"); if(p) p.nights++; else out.push({kind:"private",nights:1,amt:0,receipt:true,desc:""}); } }
+  return out;
+}
 /* Multi-day trip: meals and incidentals ticked per day, accommodation per night (hotel with receipt, or NJC private rate). */
 function tripParts(e){
   const R=e.rates||{}, meals=[]; let inc=0, incDays=0;
   for(const d of e.days||[]){ for(const [k,n] of MEALS) if(d[k]) meals.push({k,n:dayLbl(d.date)+" "+n.toLowerCase(),amt:Number(R[k])||0,under16:false,receipt:false}); if(d.inc){ inc+=Number(R.inc)||0; incDays++; } }
-  const nights=(e.nights||[]).filter(n=>n.kind==="hotel"||n.kind==="private").map(n=>({date:n.date,kind:n.kind,amt:n.kind==="private"?(Number(R.priv)||0):r2(Number(n.amt)||0),receipt:n.kind==="private"?true:!!n.receipt}));
-  const lodging=r2(nights.reduce((t,n)=>t+n.amt,0)), hotels=nights.filter(n=>n.kind==="hotel");
-  return {meals,inc:r2(inc),incDays,nights,lodging,hotelN:hotels.length,privN:nights.length-hotels.length,hotelMissing:hotels.filter(n=>!n.receipt).length};
+  const lodgings=tripLodgings(e).map(l=>({...l,amt:l.kind==="private"?r2(l.nights*(Number(R.priv)||0)):r2(Number(l.amt)||0),receipt:l.kind==="private"?true:!!l.receipt}));
+  const lodging=r2(lodgings.reduce((t,l)=>t+l.amt,0)), hotels=lodgings.filter(l=>l.kind==="hotel"), nightN=lodgings.reduce((t,l)=>t+l.nights,0);
+  return {meals,inc:r2(inc),incDays,lodgings,nights:lodgings,lodging,nightN,hotelN:hotels.length,hotelNights:hotels.reduce((t,l)=>t+l.nights,0),
+          privN:lodgings.filter(l=>l.kind==="private").reduce((t,l)=>t+l.nights,0),hotelMissing:hotels.filter(l=>!l.receipt).length};
 }
 function claimParts(e){
   if(e.trip){
@@ -804,19 +818,17 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.14.0";
+const APP_VERSION="2.14.1";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.14.1",date:"2026-11-08",kind:"patch",notes:[
+    "Trips have one accommodation line (hotel total or private nights) instead of one per night; + Add accommodation for a second hotel. Trips saved the old way convert automatically."]},
   {v:"2.14.0",date:"2026-11-08",kind:"minor",notes:[
     "On call defaults to your usual window, Friday 2:00 pm → Monday 6:00 am, for the weekend you tap (Tue–Thu fill in the coming weekend).",
     "The default window is editable in Settings; each on-call entry can still be changed."]},
   {v:"2.13.1",date:"2026-11-08",kind:"patch",notes:[
     "Time lists run 12:00 am → 11:45 pm again and sit on 12:00 pm, so they open at noon: scroll up for am, down for pm.",
-    "Times are saved only once you pick one, so an hours-only entry never gets a 12:00 pm time by accident."]},
-  {v:"2.13.0",date:"2026-11-08",kind:"minor",notes:[
-    "\"Meal & travel claim\" is now called Travel expenses.",
-    "Single-day travel expenses have optional start and finish times; trips use dates only (their times are greyed out).",
-    "Every time list opens at 12:00 pm (noon) instead of midnight."]}
+    "Times are saved only once you pick one, so an hours-only entry never gets a 12:00 pm time by accident."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -1067,14 +1079,14 @@ function render(){
 }
 /* One overtime list row: tap to edit, checkbox to confirm, amounts on the right. */
 function claimSummary(e){ if(e.trip){ const P=claimParts(e), n=(e.days||[]).length, bits=[(e.dest?e.dest+" · ":"")+n+" day"+(n===1?"":"s")];
-    if(P.nights.length) bits.push(P.nights.length+" night"+(P.nights.length===1?"":"s")); if(P.km) bits.push(hrs(P.km)+" km"); if(P.others.length) bits.push(P.others.map(o=>o.desc||"Other").join(", ")); return bits.join(" · "); }
+    if(P.nightN) bits.push(P.nightN+" night"+(P.nightN===1?"":"s")); if(P.km) bits.push(hrs(P.km)+" km"); if(P.others.length) bits.push(P.others.map(o=>o.desc||"Other").join(", ")); return bits.join(" · "); }
   const P=claimParts(e), parts=P.meals.map(m=>m.n+(m.under16?" (<16 km)":"")); if(P.inc) parts.push("Incidentals"); if(P.km) parts.push(hrs(P.km)+" km"); if(P.others.length) parts.push(P.others.map(o=>o.desc||"Other").join(", ")); return parts.join(", ")||"Nothing claimed"; }
 function claimLines(e){ const P=claimParts(e), a=[];
   if(e.trip){ const mt=P.meals.reduce((t,x)=>t+x.amt,0);
     a.push(dayLbl(e.date)+" → "+dayLbl(e.endDate||e.date));
-    if(P.meals.length||P.inc) a.push("Meals "+money(mt)+" ("+P.meals.length+")"+(P.inc?" + incidentals "+money(P.inc)+" ("+P.incDays+" days)":""));
-    if(P.hotelN) a.push("Hotel "+P.hotelN+" night"+(P.hotelN===1?"":"s")+" "+money(P.nights.filter(n=>n.kind==="hotel").reduce((t,n)=>t+n.amt,0)));
-    if(P.privN) a.push("Private accommodation "+P.privN+" × "+money(Number((e.rates||{}).priv)||0));
+    const mi=[]; if(P.meals.length) mi.push("Meals "+money(mt)+" ("+P.meals.length+")"); if(P.inc) mi.push("incidentals "+money(P.inc)+" ("+P.incDays+" day"+(P.incDays===1?"":"s")+")");
+    if(mi.length){ mi[0]=mi[0][0].toUpperCase()+mi[0].slice(1); a.push(mi.join(" + ")); }
+    for(const l of P.lodgings) a.push(l.kind==="hotel"?(l.desc||"Hotel")+" ("+l.nights+" night"+(l.nights===1?"":"s")+") "+money(l.amt):"Private accommodation "+l.nights+" × "+money(Number((e.rates||{}).priv)||0)+" = "+money(l.amt));
     if(P.km) a.push(hrs(P.km)+" km × "+money(Number(e.kmRate)||0)+" = "+money(P.kmAmt));
     for(const o of P.others) a.push((o.desc||"Other")+" "+money(o.amt));
     a.push("Total "+money(P.total)); return a; }
@@ -1319,7 +1331,7 @@ $("otForm").addEventListener("submit",async ev=>{
       if(!$("tpStartD").value||!$("tpEndD").value){err.textContent="Set the leaving and returning dates.";err.hidden=false;return;}
       if(c.endDate<c.date){err.textContent="The returning date can't be before the leaving date.";err.hidden=false;return;}
       if(c.days.length>60){err.textContent="That trip is over 60 days. Check the dates.";err.hidden=false;return;}
-      const nh=c.nights.find(n=>n.kind==="hotel"&&!(n.amt>0)); if(nh){err.textContent="Enter the hotel amount for the night of "+dayLbl(nh.date)+", or choose Private or None.";err.hidden=false;return;}
+      if(c.lodgings.find(l=>l.kind==="hotel"&&!(l.amt>0))){err.textContent="Enter the hotel total, or remove that accommodation line with ✕.";err.hidden=false;return;}
     }
     for(const [k,n] of MEALS) if(c.meals[k]&&c.meals[k].under16){ const a=Number($("cl_"+k+"_a").value);
       if(!(a>0)){err.textContent="Enter what you spent on "+n.toLowerCase()+" (under 16 km), up to "+money(c.rates[k])+".";err.hidden=false;return;}
@@ -1547,7 +1559,11 @@ function buildClaimForm(){
   }
   ["clInc","clKm"].forEach(id=>$(id).addEventListener("input",updatePreview)); $("clInc").addEventListener("change",updatePreview);
   document.querySelectorAll('input[name="clmode"]').forEach(r=>r.addEventListener("change",()=>{ setClMode(clMode()); updatePreview(); }));
-  ["tpStartD","tpEndD","tpStartT","tpEndT"].forEach(id=>$(id).addEventListener("change",()=>{ if(id==="tpStartD"&&$("tpEndD").value<$("tpStartD").value) $("tpEndD").value=$("tpStartD").value; renderTrip(); updatePreview(); }));
+  ["tpStartD","tpEndD","tpStartT","tpEndT"].forEach(id=>$(id).addEventListener("change",()=>{ if(id==="tpStartD"&&$("tpEndD").value<$("tpStartD").value) $("tpEndD").value=$("tpStartD").value;
+    const nn=Math.max(0,dateRange($("tpStartD").value,$("tpEndD").value).length-1), L=tripState.lodgings||[];
+    if(L.length===1&&!L[0].amt&&L[0].kind==="hotel") L[0].nights=Math.max(1,nn); else if(!L.length&&nn&&!editingId) tripState.lodgInit=0;
+    renderTrip(); updatePreview(); }));
+  $("tpAddLodg").onclick=()=>{ const nn=Math.max(1,dateRange($("tpStartD").value,$("tpEndD").value).length-1); tripState.lodgings.push({kind:"hotel",nights:nn,amt:"",receipt:false,desc:""}); renderLodgings(); updatePreview(); const r=$("tpNights").querySelectorAll(".lodg"); r[r.length-1].querySelector("input[placeholder]").focus(); };
   $("tpDest").addEventListener("input",updatePreview);
   $("clAddOther").onclick=()=>{ addOtherRow(); const rows=$("clOthers").querySelectorAll(".orow"); rows[rows.length-1].querySelector("input[type=text]").focus(); };
 }
@@ -1567,7 +1583,7 @@ function renderClaimTotal(c){
   const meals=r2(P.meals.reduce((t,m)=>t+m.amt,0)), rows=[];
   if(meals) rows.push(["Meals ("+P.meals.length+")",meals]);
   if(P.inc) rows.push([c.trip?"Incidentals ("+P.incDays+" day"+(P.incDays===1?"":"s")+")":"Incidentals",P.inc]);
-  if(P.lodging) rows.push(["Accommodation ("+P.nights.length+" night"+(P.nights.length===1?"":"s")+")",P.lodging]);
+  if(P.lodging) rows.push(["Accommodation ("+P.nightN+" night"+(P.nightN===1?"":"s")+")",P.lodging]);
   if(P.kmAmt) rows.push(["Mileage ("+hrs(P.km)+" km × "+money(Number(c.kmRate)||0)+")",P.kmAmt]);
   if(P.other) rows.push(["Other expenses ("+P.others.length+")",P.other]);
   const l=document.createElement("div"); l.className="lbl"; l.textContent=c.trip?"Trip total":"Travel expenses total";
@@ -1577,7 +1593,7 @@ function renderClaimTotal(c){
   B.append(l,t);
 }
 /* ---------- trip (multi-day) form ---------- */
-let tripState={days:{},nights:{}};
+let tripState={days:{},nights:{},lodgings:[],lodgInit:0};
 const clMode=()=>document.querySelector('input[name="clmode"]:checked').value;
 function setClMode(v){ document.querySelectorAll('input[name="clmode"]').forEach(r=>r.checked=r.value===v); $("clDay").hidden=v==="trip"; $("clTrip").hidden=v!=="trip"; if(v==="trip") renderTrip(); }
 function renderTrip(){
@@ -1587,39 +1603,48 @@ function renderTrip(){
   days.forEach((ds,i)=>{
     const first=i===0, last=i===days.length-1;
     /* full days start ticked; leaving/returning days start with incidentals only */
-    if(!tripState.days[ds]||!tripState.days[ds].__init){ const full=!first&&!last; tripState.days[ds]={b:full,l:full,d:full,inc:true,__init:1}; }
+    /* days you haven't changed follow their position (full / leaving / returning) if the dates change */
+    if(!tripState.days[ds]||!tripState.days[ds].__touched){ const full=!first&&!last; tripState.days[ds]={b:full,l:full,d:full,inc:true}; }
     const st=tripState.days[ds], row=document.createElement("div"); row.className="tday";
     const h=document.createElement("div"); h.className="tdh"; h.textContent=dayLbl(ds);
     const sm=document.createElement("small"); sm.textContent=first&&last?"leaving & returning":first?"leaving day":last?"returning day":"full day"; h.append(sm);
     const g=document.createElement("div"); g.className="tchips";
     for(const [k,n] of [...MEALS,["inc","Incidentals"]]){
       const lab=document.createElement("label"); lab.className="tchip"; const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!st[k];
-      cb.setAttribute("aria-label",dayLbl(ds)+" "+n); cb.onchange=()=>{ st[k]=cb.checked; updatePreview(); };
+      cb.setAttribute("aria-label",dayLbl(ds)+" "+n); cb.onchange=()=>{ st[k]=cb.checked; st.__touched=1; updatePreview(); };
       const t=document.createElement("span"); t.textContent=n==="Incidentals"?"Incid.":n; const r=document.createElement("small"); r.textContent=money(R[k]).replace(/\.00$/,"");
       lab.append(cb,t,r); g.append(lab);
     }
     row.append(h,g); D.append(row);
-    if(!last){ /* a night for every day except the return day */
-      if(!tripState.nights[ds]) tripState.nights[ds]={kind:"hotel",amt:"",receipt:false};
-      const ns=tripState.nights[ds], nr=document.createElement("div"); nr.className="tnight";
-      const nh=document.createElement("div"); nh.className="tdh"; nh.textContent="Night of "+dayLbl(ds);
-      const sel=document.createElement("select"); sel.setAttribute("aria-label","Night of "+dayLbl(ds)+" accommodation");
-      for(const [v,t] of [["hotel","Hotel (receipt)"],["private","Private ("+money(R.priv)+")"],["none","None / provided"]]) sel.add(new Option(t,v));
-      sel.value=ns.kind;
-      const amt=document.createElement("input"); amt.type="number"; amt.inputMode="decimal"; amt.min="0"; amt.step="0.01"; amt.placeholder="Hotel $"; amt.value=ns.amt; amt.setAttribute("aria-label","Hotel amount, night of "+dayLbl(ds));
-      const rl=document.createElement("label"); rl.className="ckline"; const rc=document.createElement("input"); rc.type="checkbox"; rc.checked=!!ns.receipt; const rt=document.createElement("span"); rt.textContent="I have the hotel receipt"; rl.append(rc,rt);
-      const sync=()=>{ amt.hidden=sel.value!=="hotel"; rl.hidden=sel.value!=="hotel"; };
-      sel.onchange=()=>{ ns.kind=sel.value; sync(); updatePreview(); }; amt.oninput=()=>{ ns.amt=amt.value; updatePreview(); }; rc.onchange=()=>{ ns.receipt=rc.checked; updatePreview(); };
-      sync(); nr.append(nh,sel,amt,rl); N.append(nr);
-    }
   });
-  if(days.length===1) N.textContent="No nights: same-day trip.";
+  renderLodgings();
+}
+/* Accommodation lines: one starts filled in for the trip's nights; add more if needed. */
+function renderLodgings(){
+  const R=clRates||claimRates(), N=$("tpNights"), nights=Math.max(0,dateRange($("tpStartD").value,$("tpEndD").value).length-1); N.textContent="";
+  if(!tripState.lodgInit){ tripState.lodgings=nights?[{kind:"hotel",nights,amt:"",receipt:false,desc:""}]:[]; tripState.lodgInit=1; }
+  if(!tripState.lodgings.length){ const p=document.createElement("p"); p.className="hint"; p.textContent=nights?"No accommodation added.":"Same-day trip: no nights."; N.append(p); }
+  tripState.lodgings.forEach((l,i)=>{
+    const r=document.createElement("div"); r.className="tnight lodg";
+    const sel=document.createElement("select"); sel.setAttribute("aria-label","Accommodation "+(i+1)+" type");
+    for(const [v,t] of [["hotel","Hotel"],["private","Private"]]) sel.add(new Option(t,v)); sel.value=l.kind;
+    const nw=document.createElement("label"); nw.className="nfield"; const ni=document.createElement("input"); ni.type="number"; ni.min="1"; ni.step="1"; ni.inputMode="numeric"; ni.value=l.nights; ni.setAttribute("aria-label","Accommodation "+(i+1)+" nights"); const ns=document.createElement("span"); ns.textContent="nights"; nw.append(ni,ns);
+    const amt=document.createElement("input"); amt.type="number"; amt.inputMode="decimal"; amt.min="0"; amt.step="0.01"; amt.placeholder="Total $ for the stay"; amt.value=l.amt; amt.setAttribute("aria-label","Accommodation "+(i+1)+" amount");
+    const pv=document.createElement("span"); pv.className="privamt num";
+    const del=document.createElement("button"); del.type="button"; del.className="odel danger"; del.textContent="✕"; del.setAttribute("aria-label","Remove accommodation "+(i+1));
+    const rl=document.createElement("label"); rl.className="ckline"; const rc=document.createElement("input"); rc.type="checkbox"; rc.checked=!!l.receipt; const rt=document.createElement("span"); rt.textContent="I have the hotel receipt"; rl.append(rc,rt);
+    const sync=()=>{ const h=sel.value==="hotel"; amt.hidden=!h; rl.hidden=!h; pv.hidden=h; pv.textContent=(Number(ni.value)||0)+" × "+money(R.priv)+" = "+money(r2((Number(ni.value)||0)*R.priv)); };
+    sel.onchange=()=>{ l.kind=sel.value; sync(); updatePreview(); }; ni.oninput=()=>{ l.nights=Math.max(1,Math.round(Number(ni.value)||1)); sync(); updatePreview(); };
+    amt.oninput=()=>{ l.amt=amt.value; updatePreview(); }; rc.onchange=()=>{ l.receipt=rc.checked; updatePreview(); };
+    del.onclick=()=>{ tripState.lodgings.splice(i,1); renderLodgings(); updatePreview(); };
+    sync(); r.append(sel,nw,del,amt,pv,rl); N.append(r);
+  });
 }
 function tripDraft(){
   const R=clRates||claimRates(), a=$("tpStartD").value, b=$("tpEndD").value, days=dateRange(a,b);
   return {type:"claim",trip:true,date:a||$("fDate").value||today(),endDate:b||a,dest:$("tpDest").value.trim(),
     days:days.map(ds=>{const st=tripState.days[ds]||{};return {date:ds,b:!!st.b,l:!!st.l,d:!!st.d,inc:!!st.inc};}),
-    nights:days.slice(0,-1).map(ds=>{const n=tripState.nights[ds]||{kind:"none"};return {date:ds,kind:n.kind,amt:Math.max(0,r2(Number(n.amt)||0)),receipt:!!n.receipt};}),
+    lodgings:(tripState.lodgings||[]).map(l=>({kind:l.kind,nights:Math.max(1,Math.round(Number(l.nights)||1)),amt:l.kind==="hotel"?Math.max(0,r2(Number(l.amt)||0)):0,receipt:l.kind==="hotel"&&!!l.receipt,desc:l.desc||""})),
     km:Math.max(0,Number($("clKm").value)||0),kmRate:R.km,rates:R,others:readOthers(),meals:{},inc:0};
 }
 function claimUI(){
@@ -1643,11 +1668,11 @@ function fillClaimForm(e){
   $("clInc").checked=!!(e&&e.inc); $("clKm").value=e&&e.km?e.km:""; $("clStart").value=e&&!e.trip&&e.start||""; $("clEnd").value=e&&!e.trip&&e.end||""; if(e&&!e.trip&&e.start&&e.end) markTimes("clStart","clEnd");
   $("clOthers").textContent=""; if(e) for(const o of claimParts(e).others) addOtherRow(o);
   /* trip fields */
-  tripState={days:{},nights:{}};
+  tripState={days:{},nights:{},lodgings:[],lodgInit:0};
   const sd=(e&&e.trip?e.date:$("fDate").value)||today();
   $("tpStartD").value=sd; $("tpEndD").value=e&&e.trip?(e.endDate||sd):(()=>{const [y,m,d]=sd.split("-").map(Number);return new Date(Date.UTC(y,m-1,d+2)).toISOString().slice(0,10);})();
   $("tpStartT").value=e&&e.trip?(e.leave||"08:00"):"08:00"; $("tpEndT").value=e&&e.trip?(e.ret||"17:00"):"17:00"; $("tpDest").value=e&&e.trip?(e.dest||""):"";
-  if(e&&e.trip){ for(const d of e.days||[]) tripState.days[d.date]={b:d.b,l:d.l,d:d.d,inc:d.inc,__init:1}; for(const n of e.nights||[]) tripState.nights[n.date]={kind:n.kind,amt:n.kind==="hotel"?n.amt:"",receipt:n.receipt}; }
+  if(e&&e.trip){ for(const d of e.days||[]) tripState.days[d.date]={b:d.b,l:d.l,d:d.d,inc:d.inc,__touched:1}; tripState.lodgings=tripLodgings(e).map(l=>({...l,amt:l.kind==="hotel"?l.amt:""})); tripState.lodgInit=1; }
   setClMode(e&&e.trip?"trip":"day");
   claimUI();
 }
