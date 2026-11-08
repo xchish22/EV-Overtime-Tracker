@@ -252,6 +252,7 @@ li.entry.tap:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .cltotal tr.tot td{border-top:2px solid var(--cl);padding-top:6px;font-weight:800;font-size:1.05rem}
 .cltotal .lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
 .clsec{display:flex;flex-direction:column;gap:10px}
+select.tgrey:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(1)}
 .clbox>.seg label{flex:1;position:relative;text-align:center;padding:10px 6px;font-weight:600;cursor:pointer;min-height:44px;font-size:.9rem;color:var(--ink)}
 .clbox>.seg label+label{border-left:1px solid var(--line)}
 .tpdays{display:flex;flex-direction:column;gap:8px}
@@ -268,6 +269,7 @@ li.entry.tap:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .tnight .tdh{grid-column:1/-1}
 .tnight select,.tnight input[type=number]{width:100%;min-height:40px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
 .tnight .ckline{grid-column:1/-1;font-size:.86rem}
+.clother{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
 .olist{display:flex;flex-direction:column;gap:8px}
 .orow{display:grid;grid-template-columns:1.5fr 1fr auto;gap:8px;align-items:center;padding:8px;border-radius:10px;background:var(--bg)}
 .orow input[type=text],.orow input[type=number]{width:100%;min-height:42px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-width:0}
@@ -409,12 +411,12 @@ details.settings[open]>summary::after{content:"－"}
   </div>
 
   <section class="card">
-    <div class="sectionhead"><h2>Calendar</h2><span class="hint" style="grid-column:auto">Tap a day to log overtime, a callback, court or on call</span></div>
+    <div class="sectionhead"><h2>Calendar</h2><span class="hint" style="grid-column:auto">Tap a day to log overtime, a callback, court, on call or travel expenses</span></div>
     <div class="calwrap">
         <div class="cal" aria-label="Calendar">
           <div class="calhead"><button type="button" id="calPrev" aria-label="Previous month">‹</button><strong id="calTitle">—</strong><button type="button" id="calNext" aria-label="Next month">›</button></div>
           <div class="calgrid" id="calGrid"></div>
-          <div class="callegend"><span><i class="sw" style="background:var(--accent-soft);border:1px solid var(--accent)"></i>RTO, paid 2×</span><span><i class="sw" style="background:var(--ink)"></i>Pay period starts</span><span><i class="sw" style="background:var(--work)"></i>Your shift</span><span><i class="sw" style="background:var(--otc)"></i>Overtime</span><span><i class="sw" style="background:var(--oc)"></i>On call</span><span><b style="color:var(--cl);font-size:.8rem">$</b> Claim</span><span><i class="sw" style="background:var(--accent)"></i>Waiting (hrs)</span><span><i class="sw" style="background:var(--ok)"></i>Confirmed</span></div>
+          <div class="callegend"><span><i class="sw" style="background:var(--accent-soft);border:1px solid var(--accent)"></i>RTO, paid 2×</span><span><i class="sw" style="background:var(--ink)"></i>Pay period starts</span><span><i class="sw" style="background:var(--work)"></i>Your shift</span><span><i class="sw" style="background:var(--otc)"></i>Overtime</span><span><i class="sw" style="background:var(--oc)"></i>On call</span><span><b style="color:var(--cl);font-size:.8rem">$</b> Travel expenses</span><span><i class="sw" style="background:var(--accent)"></i>Waiting (hrs)</span><span><i class="sw" style="background:var(--ok)"></i>Confirmed</span></div>
         </div>    </div>
     <div class="calfoot"><button type="button" class="btn-primary" id="logToday">Log time for today</button></div>
   </section>
@@ -423,7 +425,7 @@ details.settings[open]>summary::after{content:"－"}
     <div class="sheethead"><div><h2 id="formTitle">Add overtime</h2><div id="sheetDate" class="sheetdate"></div></div><button type="button" id="sheetClose" aria-label="Close">✕</button></div>
     <form class="add" id="otForm" novalidate>
       <div class="field full"><label for="fType">Type</label>
-        <select id="fType"><option value="ot">Overtime</option><option value="callback">Callback (3 hr minimum)</option><option value="callhome">Callback worked at home (1 hr minimum)</option><option value="court">Court while off duty (4 hr minimum)</option><option value="oncall">On call (OA)</option><option value="claim">Meal &amp; travel claim</option></select></div>
+        <select id="fType"><option value="ot">Overtime</option><option value="callback">Callback (3 hr minimum)</option><option value="callhome">Callback worked at home (1 hr minimum)</option><option value="court">Court while off duty (4 hr minimum)</option><option value="oncall">On call (OA)</option><option value="claim">Travel expenses</option></select></div>
       <input type="hidden" id="fDate">
       <div class="dayhas" id="dayHas" hidden></div>
       <button type="button" class="btn-primary addmore" id="addMore" hidden>+ Log more time on this day</button>
@@ -443,8 +445,8 @@ details.settings[open]>summary::after{content:"－"}
         </div>
         <p class="hint" id="ocFillHint">Times are copied from your last on-call period. If you work during it, log the overtime or callback separately and those hours come off the on-call time (22.14).</p>
       </div>
-      <div class="field wk"><label for="fStart">Start</label><select id="fStart" class="tsel" data-empty="Start time"></select></div>
-      <div class="field wk"><label for="fEnd">Finish</label><select id="fEnd" class="tsel" data-empty="Finish time"></select></div>
+      <div class="field wk"><label for="fStart">Start</label><select id="fStart" class="tsel"></select></div>
+      <div class="field wk"><label for="fEnd">Finish</label><select id="fEnd" class="tsel"></select></div>
       <div class="field wk"><label for="fHours">Hours worked</label><input type="number" id="fHours" inputmode="decimal" min="0" step="0.25" placeholder="or type hours"></div>
       <div class="ratebox wk" aria-live="polite">
         <div class="rv"><span class="label">Rate</span><b id="rateVal">1.5×</b><span id="rateWhy"></span></div>
@@ -456,16 +458,18 @@ details.settings[open]>summary::after{content:"－"}
           <label><input type="radio" name="clmode" value="trip">Trip (multi-day)</label>
         </div>
         <div id="clDay" class="clsec">
+          <div class="clother"><div class="field"><label for="clStart">Start</label><select id="clStart" class="tsel"></select></div>
+            <div class="field"><label for="clEnd">Finish</label><select id="clEnd" class="tsel"></select></div></div>
           <span class="label">Meals</span>
           <div id="clMeals"></div>
           <label class="ckline clinc"><input type="checkbox" id="clInc"><span>Incidentals</span><span class="num clr" id="clIncR"></span></label>
         </div>
         <div id="clTrip" class="clsec" hidden>
           <div class="field"><label for="tpDest">Destination / reason</label><input type="text" id="tpDest" maxlength="80" placeholder="e.g. Kamloops court"></div>
-          <div class="field"><span class="label">Leaving</span><div class="dtpair"><input type="date" id="tpStartD" aria-label="Leaving date"><select id="tpStartT" class="tsel" aria-label="Leaving time"></select></div></div>
-          <div class="field"><span class="label">Returning</span><div class="dtpair"><input type="date" id="tpEndD" aria-label="Returning date"><select id="tpEndT" class="tsel" aria-label="Returning time"></select></div></div>
+          <div class="field"><span class="label">Leaving</span><div class="dtpair"><input type="date" id="tpStartD" aria-label="Leaving date"><select id="tpStartT" class="tsel tgrey" aria-label="Leaving time (not used for trips)" disabled></select></div></div>
+          <div class="field"><span class="label">Returning</span><div class="dtpair"><input type="date" id="tpEndD" aria-label="Returning date"><select id="tpEndT" class="tsel tgrey" aria-label="Returning time (not used for trips)" disabled></select></div></div>
           <span class="label">Meals &amp; incidentals by day</span>
-          <p class="hint" id="tpDayHint">Full days start ticked. On the leaving and returning days, tick the meals you're entitled to. Untick any meal that was provided.</p>
+          <p class="hint" id="tpDayHint">Full days start ticked. On the leaving and returning days, tick the meals you're entitled to (times aren't used for trips). Untick any meal that was provided.</p>
           <div id="tpDays" class="tpdays"></div>
           <span class="label">Accommodation</span>
           <div id="tpNights" class="tpdays"></div>
@@ -566,7 +570,7 @@ details.settings[open]>summary::after{content:"－"}
         <label class="ckline"><input type="checkbox" id="sEi">EI is deducted from my pay</label>
         <p class="hint">Taxable income starts at your salary minus pension contributions: $137,677 − about $16,819 (your stub's $644.69 × 26.09 pays) = $120,858. Each overtime dollar is taxed at your top federal and BC rates, and CPP and EI come off only until they reach their 2026 maximums. Overtime is assumed not to be pensionable. Your actual payroll withholding on a single pay stub can differ, since payroll annualizes each pay. Your true tax is settled when you file.</p>
       </div>
-      <div class="field full taxset"><span class="label">Meal &amp; travel claim rates (NJC Travel Directive, 100%)</span>
+      <div class="field full taxset"><span class="label">Travel expense rates (NJC Travel Directive, 100%)</span>
         <div class="setgrid2">
           <div class="field"><label for="sClB">Breakfast</label><input type="number" id="sClB" inputmode="decimal" min="0" step="0.05"></div>
           <div class="field"><label for="sClL">Lunch</label><input type="number" id="sClL" inputmode="decimal" min="0" step="0.05"></div>
@@ -790,19 +794,19 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.12.1";
+const APP_VERSION="2.13.1";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.13.1",date:"2026-11-08",kind:"patch",notes:[
+    "Time lists run 12:00 am → 11:45 pm again and sit on 12:00 pm, so they open at noon: scroll up for am, down for pm.",
+    "Times are saved only once you pick one, so an hours-only entry never gets a 12:00 pm time by accident."]},
+  {v:"2.13.0",date:"2026-11-08",kind:"minor",notes:[
+    "\"Meal & travel claim\" is now called Travel expenses.",
+    "Single-day travel expenses have optional start and finish times; trips use dates only (their times are greyed out).",
+    "Every time list opens at 12:00 pm (noon) instead of midnight."]},
+
   {v:"2.12.1",date:"2026-11-08",kind:"patch",notes:[
-    "Claim and trip forms show a running total box: meals, incidentals, accommodation, mileage and other expenses, with the grand total."]},
-  {v:"2.12.0",date:"2026-11-08",kind:"minor",notes:[
-    "Trip claims for multi-day travel: leaving and returning date and time, a day-by-day grid for meals and incidentals, and accommodation per night (hotel with receipt, or private at the NJC rate).",
-    "One claim per trip with a full breakdown; trip days show a purple band on the calendar.",
-    "Private accommodation rate ($50.00/night) is editable in Settings."]},
-  {v:"2.11.0",date:"2026-11-08",kind:"minor",notes:[
-    "Under-16-km meal amounts are capped at the meal's rate as you type.",
-    "Other expenses are a list: + Add expense for each item (e.g. Uber $25, Hotel $125).",
-    "Receipt tick boxes for under-16-km meals and other expenses; claims flag a missing receipt in red."]}
+    "Claim and trip forms show a running total box: meals, incidentals, accommodation, mileage and other expenses, with the grand total."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -822,19 +826,25 @@ function ensureOpt(sel,v){ if(!v||[...sel.options].some(o=>o.value===v)) return;
   const o=new Option(tLabel(v),v); const after=[...sel.options].find(x=>x.value&&x.value>v); sel.insertBefore(o,after||null); }
 function initTimeSelect(sel){
   const empty=sel.dataset.empty; if(empty) sel.add(new Option(empty,""));
+  /* 12:00 am at the top, 11:45 pm at the bottom; boxes sit on 12:00 pm so the list opens at noon (scroll up for am, down for pm) */
   for(let m=0;m<1440;m+=15){const v=String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); sel.add(new Option(tLabel(v),v));}
+  sel.addEventListener("change",()=>{ sel.dataset.touched="1"; });
   /* keep exact times from older entries (e.g. 4:20) by adding them when set */
   const d=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value");
-  Object.defineProperty(sel,"value",{configurable:true,get(){return d.get.call(this);},set(v){ensureOpt(this,v);d.set.call(this,v||(empty?"":"00:00"));}});
+  Object.defineProperty(sel,"value",{configurable:true,get(){return d.get.call(this);},set(v){ if(!v) delete this.dataset.touched; ensureOpt(this,v); d.set.call(this,v||"12:00"); }});
+  d.set.call(sel,"12:00");
 }
 /* A hidden "YYYY-MM-DDTHH:MM" field driven by a date box and a 15-minute time list. */
 function bindDateTime(hid,dId,tId){
   const h=$(hid), D=$(dId), T=$(tId); let v="";
-  Object.defineProperty(h,"value",{configurable:true,get(){return v;},set(x){v=x||""; D.value=v.slice(0,10); T.value=v.slice(11,16)||"00:00";}});
-  const fire=()=>{ v=D.value?D.value+"T"+(T.value||"00:00"):""; h.dispatchEvent(new Event("change")); };
+  Object.defineProperty(h,"value",{configurable:true,get(){return v;},set(x){v=x||""; D.value=v.slice(0,10); T.value=v.slice(11,16)||"12:00";}});
+  const fire=()=>{ v=D.value?D.value+"T"+(T.value||"12:00"):""; h.dispatchEvent(new Event("change")); };
   D.addEventListener("change",fire); T.addEventListener("change",fire);
 }
 document.querySelectorAll("select.tsel").forEach(initTimeSelect);
+/* Times count only once you've picked one (or the entry already had them); untouched boxes just sit on 12:00 pm. */
+const timesUsed=(a,b)=>!!($(a).dataset.touched||$(b).dataset.touched);
+const markTimes=(a,b)=>{ $(a).dataset.touched="1"; $(b).dataset.touched="1"; };
 bindDateTime("ocStart","ocStartD","ocStartT"); bindDateTime("ocEnd","ocEndD","ocEndT");
 const nowLocal=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")+"T"+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");};
 const ppNo=d=>ppNumber(d,settings.payStart,settings.ppOffset||0);
@@ -958,7 +968,7 @@ function render(){
     $("wAmt").textContent=money(ot$+oc$+cl$);
     $("wHrs").textContent=nEntries(W.ot.length+W.oc.length+W.cl.length)+(lt?" · +"+hrs(lt)+" hrs LTO":"");
     $("wSplit").textContent=""; 
-    for(const [lbl,l,v,c] of [["Overtime",W.ot,ot$,"ot"],["On call",W.oc,oc$,"oc"],["Claims",W.cl,cl$,"cl"]]){
+    for(const [lbl,l,v,c] of [["Overtime",W.ot,ot$,"ot"],["On call",W.oc,oc$,"oc"],["Travel expenses",W.cl,cl$,"cl"]]){
       if(c==="cl"&&!l.length) continue;
       const r=document.createElement("div"); r.className="wrow "+c; const n=sumNet(l);
       const a=document.createElement("span"); a.textContent=lbl+" ("+l.length+")";
@@ -1017,7 +1027,7 @@ function render(){
     };
     L.append(section("Overtime waiting",otList,"No overtime waiting. Overtime, callbacks and court stay here until you confirm them on a pay stub.","wot"));
     L.append(section("On call waiting",ocList,"No on-call time waiting. On-call periods appear here once they start.","woc"));
-    L.append(section("Claims waiting",W.cl,"No meal or mileage claims waiting.","wcl"));
+    L.append(section("Travel expenses waiting",W.cl,"No travel expenses waiting.","wcl"));
     if(otFut.length){ const c=section("Scheduled overtime",otFut,"","wfut"); c.querySelector(".psum").textContent="Future dates. They move up once the day arrives."; L.append(c); }
     return;
   }
@@ -1053,13 +1063,14 @@ function claimSummary(e){ if(e.trip){ const P=claimParts(e), n=(e.days||[]).leng
   const P=claimParts(e), parts=P.meals.map(m=>m.n+(m.under16?" (<16 km)":"")); if(P.inc) parts.push("Incidentals"); if(P.km) parts.push(hrs(P.km)+" km"); if(P.others.length) parts.push(P.others.map(o=>o.desc||"Other").join(", ")); return parts.join(", ")||"Nothing claimed"; }
 function claimLines(e){ const P=claimParts(e), a=[];
   if(e.trip){ const mt=P.meals.reduce((t,x)=>t+x.amt,0);
-    a.push(dayLbl(e.date)+", "+tLabel(e.leave||"00:00")+" → "+dayLbl(e.endDate||e.date)+", "+tLabel(e.ret||"00:00"));
+    a.push(dayLbl(e.date)+" → "+dayLbl(e.endDate||e.date));
     if(P.meals.length||P.inc) a.push("Meals "+money(mt)+" ("+P.meals.length+")"+(P.inc?" + incidentals "+money(P.inc)+" ("+P.incDays+" days)":""));
     if(P.hotelN) a.push("Hotel "+P.hotelN+" night"+(P.hotelN===1?"":"s")+" "+money(P.nights.filter(n=>n.kind==="hotel").reduce((t,n)=>t+n.amt,0)));
     if(P.privN) a.push("Private accommodation "+P.privN+" × "+money(Number((e.rates||{}).priv)||0));
     if(P.km) a.push(hrs(P.km)+" km × "+money(Number(e.kmRate)||0)+" = "+money(P.kmAmt));
     for(const o of P.others) a.push((o.desc||"Other")+" "+money(o.amt));
     a.push("Total "+money(P.total)); return a; }
+  if(e.start||e.end) a.push((e.start?tLabel(e.start):"?")+" – "+(e.end?tLabel(e.end):"?"));
   const m=P.meals.reduce((t,x)=>t+x.amt,0); if(P.meals.length||P.inc) a.push((P.meals.length?"Meals "+money(m):"")+(P.meals.length&&P.inc?" + ":"")+(P.inc?"incidentals "+money(P.inc):""));
   if(P.km) a.push(hrs(P.km)+" km × "+money(Number(e.kmRate)||0)+" = "+money(P.kmAmt));
   for(const o of P.others) a.push((o.desc||"Other")+" "+money(o.amt));
@@ -1079,7 +1090,7 @@ function buildEntry(e,all){
     cb.onchange=()=>{ const want=cb.checked; cb.checked=!want; askConfirm(e.id,want); }; chk.append(cb,document.createElement("span"));
     const main=document.createElement("div"); main.className="e-main";
     const oc=e.type==="oncall";
-    const t=document.createElement("div"); t.className="e-top"; t.textContent=nice(e.date)+" · "+(cl?(e.trip?"Trip claim":"Meal & travel claim"):typ.name+(oc?" ("+(e.level||"OA")+")":""));
+    const t=document.createElement("div"); t.className="e-top"; t.textContent=nice(e.date)+" · "+(cl?(e.trip?"Travel expenses (trip)":"Travel expenses"):typ.name+(oc?" ("+(e.level||"OA")+")":""));
     const tg=document.createElement("span"); tg.className="tag"+(oc?" ocl":cl?" cll":""); tg.textContent=cl?"NJC":rateTxt(e); t.append(tg);
     if(lto){const t2=document.createElement("span");t2.className="tag";t2.textContent="LTO";t.append(t2);}
     const m=document.createElement("div"); m.className="e-meta";
@@ -1132,15 +1143,16 @@ function draft(){
     return {date:a?a.slice(0,10):"",created:prev?prev.created:9e15,id:editingId||"_draft",type:"oncall",level:ocLevel(),ocStart:a,ocEnd:b,hours:h,mult:1,comp:comp(),rate:prev?prev.rate:settings.rate,why:""};
   }
   let ar=autoRate($("fDate").value||today(),$("fRecalled").checked,settings.sched,settings.shift);
-  const dr=dayRates($("fDate").value||today(),$("fStart").value,$("fEnd").value,$("fRecalled").checked,settings.sched,settings.shift);
+  const tU=timesUsed("fStart","fEnd"), tS=tU?$("fStart").value:null, tE=tU?$("fEnd").value:null;
+  const dr=dayRates($("fDate").value||today(),tS,tE,$("fRecalled").checked,settings.sched,settings.shift);
   if(dr) ar={mult:dr.mult,why:"Split at midnight: "+segTxt(dr.segs)+". RTO ends at midnight (25.04).",segs:dr.segs};
-  const ty=$("fType").value, ps=(ty==="callback"||ty==="callhome")?preShiftHours($("fDate").value||today(),$("fStart").value,settings.sched,settings.shift):null;
+  const ty=$("fType").value, ps=(ty==="callback"||ty==="callhome")?preShiftHours($("fDate").value||today(),tS,settings.sched,settings.shift):null;
   return {id:editingId||"_draft",date:$("fDate").value||today(),created:prev?prev.created:9e15,type:ty,hours:Number($("fHours").value)||0,mult:ar.mult,segs:ar.segs||null,why:ar.why,comp:comp(),rate:prev?prev.rate:settings.rate,preShift:ps!=null};
 }
 function updatePreview(){
   const P=$("preview"); P.textContent=""; $("taxBox").hidden=true;
   if($("fType").value==="claim"){ $("formErr").hidden=true; const c=claimDraft(), b=document.createElement("b"); renderClaimTotal(c); b.textContent=money(claimTotal(c));
-    P.append("Claim total ",b," · "+claimLines(c).slice(0,-1).join(" · ")+(claimLines(c).length>1?"":"Tick a meal or incidentals, or enter kilometres or other expenses."));
+    P.append("Total ",b," · "+claimLines(c).slice(0,-1).join(" · ")+(claimLines(c).length>1?"":"Tick a meal or incidentals, or enter kilometres or other expenses."));
     const PP=claimParts(c); if(PP.missingR){ const w=document.createElement("span"); w.className="netp"; w.style.color="var(--bad)"; w.textContent="Receipt not ticked for "+PP.missingR+" item"+(PP.missingR===1?"":"s")+"."; P.append(w); }
     return; }
   const d=draft();
@@ -1156,7 +1168,7 @@ function updatePreview(){
   if(!d.hours){P.textContent="Enter start and finish times, or type the hours.";return;}
   const ph=paidHours(d), typ=TYPES[d.type];
   let why=""; if(d.preShift) why=" (26.04: called back within 3 hrs of your shift, paid until it starts, no minimum)"; else if(ph>d.hours) why=" ("+typ.ref+")"; else if(ph<d.hours) why=" (paid in completed 15 min blocks, 25.02)";
-  const sp=shiftSplit($("fDate").value||today(),$("fStart").value,$("fEnd").value,settings.sched,settings.shift);
+  const sp=timesUsed("fStart","fEnd")?shiftSplit($("fDate").value||today(),$("fStart").value,$("fEnd").value,settings.sched,settings.shift):null;
   if(sp&&sp.inside>0&&!d.preShift) why+=" · "+hrs(sp.inside)+" hrs inside your regular shift not counted";
   const b=document.createElement("b");
   if(d.comp==="lto"){b.textContent=hrs(ltoCredit(d))+" hrs LTO"; P.append("Earns ",b," · "+(d.segs?segTxt(d.segs):hrs(ph)+" hrs × "+multTxt(d.mult))+why);}
@@ -1194,7 +1206,7 @@ function resetForm(){
 }
 function startEdit(id){
   const e=entries[id]; if(!e)return; editingId=id;
-  $("fType").value=e.type||"ot"; $("fDate").value=e.date; $("fStart").value=e.start||""; $("fEnd").value=e.end||""; $("fHours").value=e.hours; $("fRecalled").checked=e.recalled!=null?!!e.recalled:(e.mult==2&&autoRate(e.date,false,settings.sched,settings.shift).mult!==2); calMonth=e.date.slice(0,7); setComp(e.comp||"cash"); $("fNote").value=e.note||"";
+  $("fType").value=e.type||"ot"; $("fDate").value=e.date; $("fStart").value=e.start||""; $("fEnd").value=e.end||""; if(e.start&&e.end) markTimes("fStart","fEnd"); $("fHours").value=e.hours; $("fRecalled").checked=e.recalled!=null?!!e.recalled:(e.mult==2&&autoRate(e.date,false,settings.sched,settings.shift).mult!==2); calMonth=e.date.slice(0,7); setComp(e.comp||"cash"); $("fNote").value=e.note||"";
   if(e.type==="oncall"){setOcLevel(e.level||"OA");$("ocStart").value=e.ocStart||"";$("ocEnd").value=e.ocEnd||"";}
   if(e.type==="claim") fillClaimForm(e); setMode();
   $("confirmBox").hidden=!e.confirmed; $("fStub").value=e.stubDate||""; $("fPaid").value=e.paid!=null?e.paid:"";
@@ -1262,7 +1274,7 @@ function renderDayHas(){
     const typ=TYPES[e.type]||TYPES.ot, oc=e.type==="oncall", lto=e.comp==="lto", ph=paidHours(e);
     const card=document.createElement("div"); card.className="dcard"+(oc?" isoc":" isot");
     const top=document.createElement("div"); top.className="dtop";
-    const nm=document.createElement("strong"); nm.textContent=e.type==="claim"?(e.trip?"Trip claim":"Meal & travel claim"):typ.name+(oc?" ("+(e.level||"OA")+")":"");
+    const nm=document.createElement("strong"); nm.textContent=e.type==="claim"?(e.trip?"Travel expenses (trip)":"Travel expenses"):typ.name+(oc?" ("+(e.level||"OA")+")":"");
     const tg=document.createElement("span"); tg.className="tag"+(e.type==="claim"?" cll":""); tg.textContent=e.type==="claim"?"NJC":rateTxt(e); nm.append(tg);
     if(lto){const t2=document.createElement("span");t2.className="tag";t2.textContent="LTO";nm.append(t2);}
     const amt=document.createElement("span"); amt.className="e-amt"; amt.textContent=lto?"+"+hrU(ltoCredit(e)):money(amountOf(e));
@@ -1297,7 +1309,7 @@ $("otForm").addEventListener("submit",async ev=>{
     if(!$("fDate").value){err.textContent="Pick the date of the claim.";err.hidden=false;return;}
     if(c.trip){
       if(!$("tpStartD").value||!$("tpEndD").value){err.textContent="Set the leaving and returning dates.";err.hidden=false;return;}
-      if(c.endDate<c.date||(c.endDate===c.date&&c.ret<=c.leave)){err.textContent="Returning must be after leaving.";err.hidden=false;return;}
+      if(c.endDate<c.date){err.textContent="The returning date can't be before the leaving date.";err.hidden=false;return;}
       if(c.days.length>60){err.textContent="That trip is over 60 days. Check the dates.";err.hidden=false;return;}
       const nh=c.nights.find(n=>n.kind==="hotel"&&!(n.amt>0)); if(nh){err.textContent="Enter the hotel amount for the night of "+dayLbl(nh.date)+", or choose Private or None.";err.hidden=false;return;}
     }
@@ -1312,7 +1324,7 @@ $("otForm").addEventListener("submit",async ev=>{
       confirmed:prev?!!prev.confirmed:false,stubDate:prev?prev.stubDate||null:null,paid:prev?prev.paid??null:null};
     if(prev&&prev.confirmed){e.stubDate=$("fStub").value||null; const p=$("fPaid").value; e.paid=p===""?null:Math.round(Number(p)*100)/100;}
     entries[e.id]=e; activeKey=payPeriod(e.date,settings.payStart).start; if(!prev&&filter==="done") filter="wait"; closeSheet(); render();
-    try{await store.save(e);flash(prev?"Claim updated":"Claim added: "+money(P.total));}catch(x){flash("Couldn't save. Try again.",true);}
+    try{await store.save(e);flash(prev?"Travel expenses updated":"Travel expenses added: "+money(P.total));}catch(x){flash("Couldn't save. Try again.",true);}
     return;
   }
   if($("fType").value==="oncall"){
@@ -1346,9 +1358,9 @@ $("otForm").addEventListener("submit",async ev=>{
   err.hidden=true;
   const prev=editingId?entries[editingId]:null;
   const e={id:prev?prev.id:"o"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
-    type:$("fType").value,date:$("fDate").value,start:$("fStart").value||null,end:$("fEnd").value||null,
+    type:$("fType").value,date:$("fDate").value,start:timesUsed("fStart","fEnd")?$("fStart").value:null,end:timesUsed("fStart","fEnd")?$("fEnd").value:null,
     hours:h,mult:draft().mult,segs:draft().segs,recalled:$("fRecalled").checked,comp:comp(),note:$("fNote").value.trim(),
-    preShift:(["callback","callhome"].includes($("fType").value)&&preShiftHours($("fDate").value,$("fStart").value,settings.sched,settings.shift)!=null),
+    preShift:(["callback","callhome"].includes($("fType").value)&&timesUsed("fStart","fEnd")&&preShiftHours($("fDate").value,$("fStart").value,settings.sched,settings.shift)!=null),
     rate:prev?prev.rate:settings.rate,created:prev?prev.created:Date.now(),
     confirmed:prev?!!prev.confirmed:false,stubDate:prev?prev.stubDate||null:null,paid:prev?prev.paid??null:null};
   if(prev&&prev.confirmed){e.stubDate=$("fStub").value||null; const p=$("fPaid").value; e.paid=p===""?null:Math.round(Number(p)*100)/100;}
@@ -1365,8 +1377,8 @@ let confPending=null;
 function askConfirm(id,on,after){
   const e=entries[id]; if(!e) return; confPending={id,on,after};
   const typ=TYPES[e.type]||TYPES.ot, lto=e.comp==="lto"&&e.type!=="claim", cl=e.type==="claim";
-  $("confTitle").textContent=on?(lto?"Confirm lieu time banked?":cl?"Confirm claim paid?":"Confirm overtime paid?"):"Move back to waiting?";
-  $("confWhat").textContent=nice(e.date)+" · "+(cl?"Meal & travel claim":typ.name+(e.type==="oncall"?" ("+(e.level||"OA")+")":""))+" · "+(lto?"+"+hrs(ltoCredit(e))+" hrs LTO":money(xp(e)));
+  $("confTitle").textContent=on?(lto?"Confirm lieu time banked?":cl?"Confirm travel expenses paid?":"Confirm overtime paid?"):"Move back to waiting?";
+  $("confWhat").textContent=nice(e.date)+" · "+(cl?(e.trip?"Travel expenses (trip)":"Travel expenses"):typ.name+(e.type==="oncall"?" ("+(e.level||"OA")+")":""))+" · "+(lto?"+"+hrs(ltoCredit(e))+" hrs LTO":money(xp(e)));
   $("confMsg").textContent=on?(lto?"Check that these hours show in your lieu time bank, then confirm.":"Check that this shows on your pay stub. Add the stub date and, if you like, the amount it paid."):"This removes the confirmation and the stub date and amount saved with it.";
   $("confFields").hidden=!on; $("confPaid").closest(".field").hidden=lto;
   $("confStub").value=e.stubDate||today(); $("confPaid").value=e.paid!=null?e.paid:""; $("confPaid").placeholder=lto?"":money(xp(e)).replace(/[^0-9.]/g,"");
@@ -1430,7 +1442,7 @@ function renderCal(){
     if(kind!=="work"){const r=document.createElement("span"); r.className="rt"; r.textContent=kind==="rto"?"2×":"TOW"; b.append(r);}
     if(clDates.has(ds)){ const cm=document.createElement("span"); cm.className="clmark"; cm.textContent="$"; b.append(cm); }
     if(tripDates.has(ds)){ const tb=document.createElement("i"); tb.className="tripband"; b.append(tb); }
-    const list=byDate[ds]||[]; let lbl=(clDates.has(ds)?"meal or travel claim, ":"")+DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"");
+    const list=byDate[ds]||[]; let lbl=(clDates.has(ds)?"travel expenses, ":"")+DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"");
     if(list.length){const tot=list.reduce((t,e)=>t+paidHours(e),0), allOk=list.every(e=>e.confirmed);
       const c=document.createElement("span"); c.className="eh"+(allOk?" ok":""); c.textContent=hrs(tot)+"hr"; b.append(c);
       lbl+=", "+hrs(tot)+" hours logged"+(allOk?", confirmed":"");}
@@ -1549,7 +1561,7 @@ function renderClaimTotal(c){
   if(P.lodging) rows.push(["Accommodation ("+P.nights.length+" night"+(P.nights.length===1?"":"s")+")",P.lodging]);
   if(P.kmAmt) rows.push(["Mileage ("+hrs(P.km)+" km × "+money(Number(c.kmRate)||0)+")",P.kmAmt]);
   if(P.other) rows.push(["Other expenses ("+P.others.length+")",P.other]);
-  const l=document.createElement("div"); l.className="lbl"; l.textContent=c.trip?"Trip total":"Claim total";
+  const l=document.createElement("div"); l.className="lbl"; l.textContent=c.trip?"Trip total":"Travel expenses total";
   const t=document.createElement("table");
   for(const [k,v] of rows){ const tr=document.createElement("tr"); const a=document.createElement("td"); a.textContent=k; const b=document.createElement("td"); b.className="n"; b.textContent=money(v); tr.append(a,b); t.append(tr); }
   const tr=document.createElement("tr"); tr.className="tot"; const a=document.createElement("td"); a.textContent="Total"; const b=document.createElement("td"); b.className="n"; b.textContent=money(P.total); tr.append(a,b); t.append(tr);
@@ -1569,7 +1581,7 @@ function renderTrip(){
     if(!tripState.days[ds]||!tripState.days[ds].__init){ const full=!first&&!last; tripState.days[ds]={b:full,l:full,d:full,inc:true,__init:1}; }
     const st=tripState.days[ds], row=document.createElement("div"); row.className="tday";
     const h=document.createElement("div"); h.className="tdh"; h.textContent=dayLbl(ds);
-    const sm=document.createElement("small"); sm.textContent=first&&last?"leave "+tLabel($("tpStartT").value)+" · home "+tLabel($("tpEndT").value):first?"leave "+tLabel($("tpStartT").value):last?"home "+tLabel($("tpEndT").value):"full day"; h.append(sm);
+    const sm=document.createElement("small"); sm.textContent=first&&last?"leaving & returning":first?"leaving day":last?"returning day":"full day"; h.append(sm);
     const g=document.createElement("div"); g.className="tchips";
     for(const [k,n] of [...MEALS,["inc","Incidentals"]]){
       const lab=document.createElement("label"); lab.className="tchip"; const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!st[k];
@@ -1596,7 +1608,7 @@ function renderTrip(){
 }
 function tripDraft(){
   const R=clRates||claimRates(), a=$("tpStartD").value, b=$("tpEndD").value, days=dateRange(a,b);
-  return {type:"claim",trip:true,date:a||$("fDate").value||today(),endDate:b||a,leave:$("tpStartT").value,ret:$("tpEndT").value,dest:$("tpDest").value.trim(),
+  return {type:"claim",trip:true,date:a||$("fDate").value||today(),endDate:b||a,dest:$("tpDest").value.trim(),
     days:days.map(ds=>{const st=tripState.days[ds]||{};return {date:ds,b:!!st.b,l:!!st.l,d:!!st.d,inc:!!st.inc};}),
     nights:days.slice(0,-1).map(ds=>{const n=tripState.nights[ds]||{kind:"none"};return {date:ds,kind:n.kind,amt:Math.max(0,r2(Number(n.amt)||0)),receipt:!!n.receipt};}),
     km:Math.max(0,Number($("clKm").value)||0),kmRate:R.km,rates:R,others:readOthers(),meals:{},inc:0};
@@ -1614,12 +1626,12 @@ function claimDraft(){
   const R=clRates||claimRates(), meals={};
   for(const [k] of MEALS) if($("cl_"+k).checked){ const u=$("cl_"+k+"_u").checked, a=Number($("cl_"+k+"_a").value);
     meals[k]={under16:u, amt:u?Math.min(R[k],Math.max(0,r2(a||0))):R[k], receipt:u?$("cl_"+k+"_rc").checked:false}; }
-  return {type:"claim",date:$("fDate").value||today(),meals,inc:$("clInc").checked?R.inc:0,km:Math.max(0,Number($("clKm").value)||0),kmRate:R.km,rates:R,others:readOthers()};
+  return {type:"claim",date:$("fDate").value||today(),start:timesUsed("clStart","clEnd")?$("clStart").value:null,end:timesUsed("clStart","clEnd")?$("clEnd").value:null,meals,inc:$("clInc").checked?R.inc:0,km:Math.max(0,Number($("clKm").value)||0),kmRate:R.km,rates:R,others:readOthers()};
 }
 function fillClaimForm(e){
   clRates=e&&e.rates?{...e.rates}:null;
   for(const [k] of MEALS){ const m=e&&e.meals&&e.meals[k]; $("cl_"+k).checked=!!m; $("cl_"+k+"_u").checked=!!(m&&m.under16); $("cl_"+k+"_a").value=m&&m.under16?m.amt:""; $("cl_"+k+"_rc").checked=!!(m&&m.receipt); $("cl_"+k+"_cap").hidden=true; }
-  $("clInc").checked=!!(e&&e.inc); $("clKm").value=e&&e.km?e.km:"";
+  $("clInc").checked=!!(e&&e.inc); $("clKm").value=e&&e.km?e.km:""; $("clStart").value=e&&!e.trip&&e.start||""; $("clEnd").value=e&&!e.trip&&e.end||""; if(e&&!e.trip&&e.start&&e.end) markTimes("clStart","clEnd");
   $("clOthers").textContent=""; if(e) for(const o of claimParts(e).others) addOtherRow(o);
   /* trip fields */
   tripState={days:{},nights:{}};
