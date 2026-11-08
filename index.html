@@ -225,6 +225,7 @@ li.entry.tap:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .kind{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
 .kind.major{border-color:var(--bad);color:var(--bad)} .kind.minor{border-color:var(--oc);color:var(--oc)}
 .verrules{display:flex;flex-direction:column;gap:6px}
+#clList .pcard{border-top:6px solid var(--bg)}
 #changelog{display:flex;flex-direction:column;gap:8px}
 .totals>.wsplit{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px;padding:10px 16px}
 .wrow{display:flex;justify-content:space-between;gap:8px;font-size:.88rem;color:var(--ink);flex-wrap:wrap}
@@ -274,10 +275,13 @@ select.tgrey:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(1)}
 .ocdef select{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);min-width:0}
 .clother{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
 .tnight.lodg{grid-template-columns:1.3fr 1fr auto}
-.tnight.lodg input[type=number][placeholder],.tnight.lodg .privamt,.tnight.lodg .ckline{grid-column:1/-1}
+.tnight.lodg .moneyin,.tnight.lodg .privamt,.tnight.lodg .ckline{grid-column:1/-1}
 .nfield{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted)}
 .nfield input{width:100%;min-height:40px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
 .privamt{font-size:.88rem;color:var(--ink)}
+.moneyin{position:relative;display:block;min-width:0}
+.moneyin::before{content:"$";position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:600;pointer-events:none;z-index:1}
+.moneyin>input{padding-left:24px!important;width:100%}
 .olist{display:flex;flex-direction:column;gap:8px}
 .orow{display:grid;grid-template-columns:1.5fr 1fr auto;gap:8px;align-items:center;padding:8px;border-radius:10px;background:var(--bg)}
 .orow input[type=text],.orow input[type=number]{width:100%;min-height:42px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-width:0}
@@ -498,7 +502,7 @@ details.settings[open]>summary::after{content:"－"}
       <div class="field full"><label for="fNote">Notes</label><textarea id="fNote" rows="3" maxlength="1000" placeholder="What was it for? e.g. file #, incident, who approved it, court case"></textarea></div>
       <div class="confirmbox" id="confirmBox" hidden>
         <div class="field"><label for="fStub">Pay stub date</label><input type="date" id="fStub"></div>
-        <div class="field"><label for="fPaid">Amount on stub ($)</label><input type="number" id="fPaid" inputmode="decimal" min="0" step="0.01" placeholder="optional"></div>
+        <div class="field"><label for="fPaid">Amount on stub</label><input type="number" id="fPaid" inputmode="decimal" min="0" step="0.01" placeholder="optional"></div>
       </div>
       <p class="preview" id="preview">Expected pay: <b>$0.00</b></p>
       <div class="taxbox" id="taxBox" hidden aria-live="polite"></div>
@@ -549,6 +553,7 @@ details.settings[open]>summary::after{content:"－"}
     </div>
     <div class="pnav"><button type="button" id="pOlder" aria-label="Older pay period">‹ Older</button><span id="pPos" class="small"></span><button type="button" id="pNewer" aria-label="Newer pay period">Newer ›</button></div>
     <div id="list" class="periods" tabindex="0" aria-label="Pay periods, swipe left or right"></div>
+    <div id="clList"></div>
   </section>
 
   <details class="card settings">
@@ -592,7 +597,7 @@ details.settings[open]>summary::after{content:"－"}
           <div class="field"><label for="sClL">Lunch</label><input type="number" id="sClL" inputmode="decimal" min="0" step="0.05"></div>
           <div class="field"><label for="sClD">Dinner</label><input type="number" id="sClD" inputmode="decimal" min="0" step="0.05"></div>
           <div class="field"><label for="sClInc">Incidentals (per day)</label><input type="number" id="sClInc" inputmode="decimal" min="0" step="0.05"></div>
-          <div class="field"><label for="sClKm">Mileage, BC ($ per km)</label><input type="number" id="sClKm" inputmode="decimal" min="0" step="0.005"></div>
+          <div class="field"><label for="sClKm">Mileage, BC (per km)</label><input type="number" id="sClKm" inputmode="decimal" min="0" step="0.005"></div>
           <div class="field"><label for="sClPriv">Private accommodation (per night)</label><input type="number" id="sClPriv" inputmode="decimal" min="0" step="0.05"></div>
           <div class="field"><label for="sClAsOf">Rates effective</label><input type="date" id="sClAsOf"></div>
         </div>
@@ -818,17 +823,15 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.14.1";
+const APP_VERSION="2.14.3";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.14.3",date:"2026-11-08",kind:"patch",notes:[
+    "Travel expenses aren't tied to pay periods: no PP label, and in Confirmed and All they have their own list below the pay period cards."]},
+  {v:"2.14.2",date:"2026-11-08",kind:"patch",notes:[
+    "Every dollar entry box shows a $ in front: meal amounts, hotel totals, other expenses, amount on stub and the dollar settings."]},
   {v:"2.14.1",date:"2026-11-08",kind:"patch",notes:[
-    "Trips have one accommodation line (hotel total or private nights) instead of one per night; + Add accommodation for a second hotel. Trips saved the old way convert automatically."]},
-  {v:"2.14.0",date:"2026-11-08",kind:"minor",notes:[
-    "On call defaults to your usual window, Friday 2:00 pm → Monday 6:00 am, for the weekend you tap (Tue–Thu fill in the coming weekend).",
-    "The default window is editable in Settings; each on-call entry can still be changed."]},
-  {v:"2.13.1",date:"2026-11-08",kind:"patch",notes:[
-    "Time lists run 12:00 am → 11:45 pm again and sit on 12:00 pm, so they open at noon: scroll up for am, down for pm.",
-    "Times are saved only once you pick one, so an hours-only entry never gets a 12:00 pm time by accident."]}
+    "Trips have one accommodation line (hotel total or private nights) instead of one per night; + Add accommodation for a second hotel. Trips saved the old way convert automatically."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -864,6 +867,13 @@ function bindDateTime(hid,dId,tId){
   D.addEventListener("change",fire); T.addEventListener("change",fire);
 }
 document.querySelectorAll("select.tsel").forEach(initTimeSelect);
+/* Dollar entry boxes get a fixed "$" in front. */
+/* show cents: 62.7 → 62.70; keeps a third decimal when it matters (e.g. 0.595/km) */
+function fmtMoney(v){ if(v===""||v==null||isNaN(Number(v))) return v; const n=Math.round(Number(v)*1000)/1000; return Math.abs(n*100-Math.round(n*100))>1e-9?n.toFixed(3):n.toFixed(2); }
+function formatMoneyBoxes(root){ (root||document).querySelectorAll(".moneyin>input").forEach(i=>{ if(i.value!=="") i.value=fmtMoney(i.value); }); }
+function moneyInput(inp){ if(!inp||inp.parentElement.classList.contains("moneyin")) return inp;
+  inp.addEventListener("blur",()=>{ if(inp.value!==""){ inp.value=fmtMoney(inp.value); } }); const w=document.createElement("span"); w.className="moneyin"; inp.replaceWith(w); w.append(inp); if(inp.placeholder) inp.placeholder=inp.placeholder.replace(/\$\s?/,""); return inp; }
+["fPaid","confPaid","sRate","sSalary","sTaxBase","sClB","sClL","sClD","sClInc","sClKm","sClPriv"].forEach(id=>moneyInput($(id)));
 /* Times count only once you've picked one (or the entry already had them); untouched boxes just sit on 12:00 pm. */
 const timesUsed=(a,b)=>!!($(a).dataset.touched||$(b).dataset.touched);
 const markTimes=(a,b)=>{ $(a).dataset.touched="1"; $(b).dataset.touched="1"; };
@@ -1025,7 +1035,7 @@ function render(){
     el.append(head,bar,foot);
   }
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===filter)));
-  const L=$("list"); L.textContent="";
+  const L=$("list"); L.textContent=""; $("clList").textContent="";
   const when=x=>x.ocStart||(x.date+"T"+(x.start||"00:00"));
   const shown=all.filter(e=>filter==="all"||(filter==="done")===!!e.confirmed).sort((a,b)=>when(a).localeCompare(when(b))||(a.created||0)-(b.created||0));
   const pnav=document.querySelector(".pnav");
@@ -1052,7 +1062,6 @@ function render(){
     return;
   }
   pnav.hidden=false; L.classList.remove("flat");
-  shown.push(...claimEntries().filter(e=>filter==="all"||(filter==="done")===!!e.confirmed)); shown.sort((a,b)=>when(a).localeCompare(when(b))||(a.created||0)-(b.created||0));
   const cur=payPeriod(today(),settings.payStart).start;
   const keys=[...new Set([...shown.map(e=>payPeriod(e.date,settings.payStart).start),cur])].sort();
   if(!activeKey||!keys.includes(activeKey)) activeKey=keys.includes(cur)?cur:keys[keys.length-1];
@@ -1073,6 +1082,12 @@ function render(){
     }
     L.append(card);
   }
+  /* travel expenses aren't tied to pay periods: their own list under the pay period cards */
+  { const C=$("clList"), cls=claimEntries().filter(e=>filter==="all"||(filter==="done")===!!e.confirmed).sort((a,b)=>b.date.localeCompare(a.date));
+    if(cls.length){ const card=document.createElement("div"); card.className="pcard wsec wcl"; const h=document.createElement("div"); h.className="phead";
+      const t=document.createElement("div"); t.className="ptitle"; t.textContent=filter==="done"?"Travel expenses confirmed":"Travel expenses";
+      const sm=document.createElement("div"); sm.className="num psum"; sm.textContent=nEntries(cls.length)+" · "+money(cls.reduce((q,x)=>q+amountOf(x),0));
+      h.append(t,sm); card.append(h); const ul=document.createElement("ul"); ul.className="list"; cls.forEach(e=>ul.append(buildEntry(e,all))); card.append(ul); C.append(card); } }
   const target=L.querySelector('.pcard[data-key="'+activeKey+'"]');
   if(target) L.scrollLeft=target.offsetLeft-L.offsetLeft;
   updatePnav();
@@ -1114,7 +1129,7 @@ function buildEntry(e,all){
     const tg=document.createElement("span"); tg.className="tag"+(oc?" ocl":cl?" cll":""); tg.textContent=cl?"NJC":rateTxt(e); t.append(tg);
     if(lto){const t2=document.createElement("span");t2.className="tag";t2.textContent="LTO";t.append(t2);}
     const m=document.createElement("div"); m.className="e-meta";
-    m.append("PP "+ppNo(e.date)+" · "+(cl?claimSummary(e):whenTxt(e)));
+    m.append(cl?claimSummary(e):"PP "+ppNo(e.date)+" · "+whenTxt(e));
 
     const m2=document.createElement("div"); m2.className="e-meta";
     if(e.confirmed){
@@ -1229,7 +1244,7 @@ function startEdit(id){
   $("fType").value=e.type||"ot"; $("fDate").value=e.date; $("fStart").value=e.start||""; $("fEnd").value=e.end||""; if(e.start&&e.end) markTimes("fStart","fEnd"); $("fHours").value=e.hours; $("fRecalled").checked=e.recalled!=null?!!e.recalled:(e.mult==2&&autoRate(e.date,false,settings.sched,settings.shift).mult!==2); calMonth=e.date.slice(0,7); setComp(e.comp||"cash"); $("fNote").value=e.note||"";
   if(e.type==="oncall"){setOcLevel(e.level||"OA");$("ocStart").value=e.ocStart||"";$("ocEnd").value=e.ocEnd||"";}
   if(e.type==="claim") fillClaimForm(e); setMode();
-  $("confirmBox").hidden=!e.confirmed; $("fStub").value=e.stubDate||""; $("fPaid").value=e.paid!=null?e.paid:"";
+  $("confirmBox").hidden=!e.confirmed; $("fStub").value=e.stubDate||""; $("fPaid").value=e.paid!=null?fmtMoney(e.paid):"";
   $("formTitle").textContent="Edit entry"; $("saveBtn").textContent="Save changes"; $("cancelEdit").hidden=false;
   setViewMode(false); lockOtOption(); $("formTitle").textContent="Edit entry"; $("sheetDelete").hidden=false; $("ocRepeatBox").hidden=true; $("sheetDelSeries").hidden=!e.seriesId; repeatHint(); renderDayHas(); updatePreview(); renderCal(); showSheet();
 }
@@ -1401,7 +1416,7 @@ function askConfirm(id,on,after){
   $("confWhat").textContent=nice(e.date)+" · "+(cl?(e.trip?"Travel expenses (trip)":"Travel expenses"):typ.name+(e.type==="oncall"?" ("+(e.level||"OA")+")":""))+" · "+(lto?"+"+hrs(ltoCredit(e))+" hrs LTO":money(xp(e)));
   $("confMsg").textContent=on?(lto?"Check that these hours show in your lieu time bank, then confirm.":"Check that this shows on your pay stub. Add the stub date and, if you like, the amount it paid."):"This removes the confirmation and the stub date and amount saved with it.";
   $("confFields").hidden=!on; $("confPaid").closest(".field").hidden=lto;
-  $("confStub").value=e.stubDate||today(); $("confPaid").value=e.paid!=null?e.paid:""; $("confPaid").placeholder=lto?"":money(xp(e)).replace(/[^0-9.]/g,"");
+  $("confStub").value=e.stubDate||today(); $("confPaid").value=e.paid!=null?fmtMoney(e.paid):""; $("confPaid").placeholder=lto?"":money(xp(e)).replace(/[^0-9.]/g,"");
   $("confYes").textContent=on?"Confirm":"Move back to waiting"; $("confYes").classList.toggle("btn-primary",true);
   const d=$("confDlg"); try{d.showModal();}catch(x){d.setAttribute("open","");}
 }
@@ -1491,7 +1506,7 @@ function payHint(){const v=$("sPayStart").value||DEFAULTS.payStart, c=payPeriod(
   $("payHint").textContent="Pay periods repeat every 14 days. Current: PP "+n+", "+shortD(c.start)+" – "+shortD(c.end)+". Next: PP "+(ppNumber(nx.start,v,Number($("sPpNum").value)-ppNumber(today(),v,0)||0))+", "+shortD(nx.start)+" – "+shortD(nx.end)+". PP 1 is the first pay period ending in January.";}
 $("sPayStart").addEventListener("change",payHint); $("sPpNum").addEventListener("input",payHint);
 for(const id of ["sOcSDay","sOcEDay"]) DAYNAME.forEach((n,i)=>$(id).add(new Option(n,String(i))));
-function fillSettings(){ { const W=ocDefaults(); $("sOcSDay").value=String(W.sDay); $("sOcSTime").value=W.sTime; $("sOcEDay").value=String(W.eDay); $("sOcETime").value=W.eTime; } { const c=claimRates(); $("sClB").value=c.b; $("sClL").value=c.l; $("sClD").value=c.d; $("sClInc").value=c.inc; $("sClKm").value=c.km; $("sClPriv").value=c.priv; $("sClAsOf").value=c.asOf; }const sh=settings.shift||DEFAULTS.shift;$("sShiftStart").value=sh.start;$("sShiftEnd").value=sh.end;$("sRate").value=settings.rate;$("sLtoOt").value=(settings.ltoStart||{}).ot||0;$("sLtoOc").value=(settings.ltoStart||{}).oc||0;$("sLtoAsOf").value=settings.ltoAsOf||today();$("sSalary").value=settings.salary??DEFAULTS.salary;$("sTaxBase").value=settings.taxBase??DEFAULTS.taxBase;$("sCpp").checked=settings.payCpp??DEFAULTS.payCpp;$("sEi").checked=settings.payEi??DEFAULTS.payEi;$("sCur").value=settings.currency;$("sPayStart").value=settings.payStart||DEFAULTS.payStart;$("sPpNum").value=ppNo(today());payHint();schedDraft=[...(settings.sched||DEFAULTS.sched)];renderSched();}
+function fillSettings(){ setTimeout(()=>formatMoneyBoxes($("setForm")),0); { const W=ocDefaults(); $("sOcSDay").value=String(W.sDay); $("sOcSTime").value=W.sTime; $("sOcEDay").value=String(W.eDay); $("sOcETime").value=W.eTime; } { const c=claimRates(); $("sClB").value=c.b; $("sClL").value=c.l; $("sClD").value=c.d; $("sClInc").value=c.inc; $("sClKm").value=c.km; $("sClPriv").value=c.priv; $("sClAsOf").value=c.asOf; }const sh=settings.shift||DEFAULTS.shift;$("sShiftStart").value=sh.start;$("sShiftEnd").value=sh.end;$("sRate").value=settings.rate;$("sLtoOt").value=(settings.ltoStart||{}).ot||0;$("sLtoOc").value=(settings.ltoStart||{}).oc||0;$("sLtoAsOf").value=settings.ltoAsOf||today();$("sSalary").value=settings.salary??DEFAULTS.salary;$("sTaxBase").value=settings.taxBase??DEFAULTS.taxBase;$("sCpp").checked=settings.payCpp??DEFAULTS.payCpp;$("sEi").checked=settings.payEi??DEFAULTS.payEi;$("sCur").value=settings.currency;$("sPayStart").value=settings.payStart||DEFAULTS.payStart;$("sPpNum").value=ppNo(today());payHint();schedDraft=[...(settings.sched||DEFAULTS.sched)];renderSched();}
 $("setForm").addEventListener("submit",async ev=>{
   ev.preventDefault();
   settings={ocDefault:{sDay:Number($("sOcSDay").value),sTime:$("sOcSTime").value,eDay:Number($("sOcEDay").value),eTime:$("sOcETime").value},claims:{b:Number($("sClB").value)||0,l:Number($("sClL").value)||0,d:Number($("sClD").value)||0,inc:Number($("sClInc").value)||0,km:Number($("sClKm").value)||0,priv:Number($("sClPriv").value)||0,asOf:$("sClAsOf").value||DEFAULTS.claims.asOf},ltoStart:{ot:Math.max(0,Number($("sLtoOt").value)||0),oc:Math.max(0,Number($("sLtoOc").value)||0)},ltoAsOf:$("sLtoAsOf").value||today(),salary:Math.max(0,Number($("sSalary").value)||0),taxBase:Math.max(0,Number($("sTaxBase").value)||0),payCpp:$("sCpp").checked,payEi:$("sEi").checked,rate:Math.max(0,Number($("sRate").value)||0),currency:$("sCur").value||"$",sched:[...schedDraft],payStart:$("sPayStart").value||DEFAULTS.payStart,ppOffset:(Number($("sPpNum").value)||0)-ppNumber(today(),$("sPayStart").value||DEFAULTS.payStart,0),shift:{start:$("sShiftStart").value||DEFAULTS.shift.start,end:$("sShiftEnd").value||DEFAULTS.shift.end}}; render(); updatePreview();
@@ -1548,12 +1563,12 @@ function buildClaimForm(){
       <div class="field sub" id="cl_${k}_aw" hidden><label for="cl_${k}_a" id="cl_${k}_al">Actual amount</label><input type="number" id="cl_${k}_a" inputmode="decimal" min="0" step="0.01">
         <p class="capnote" id="cl_${k}_cap" hidden></p>
         <label class="ckline"><input type="checkbox" id="cl_${k}_rc"><span>I have the receipt</span></label></div>`;
-    M.append(row);
+    M.append(row); moneyInput($("cl_"+k+"_a"));
     $("cl_"+k).addEventListener("change",()=>{claimUI();updatePreview();});
     $("cl_"+k+"_u").addEventListener("change",()=>{ if($("cl_"+k+"_u").checked&&!$("cl_"+k+"_a").value) setTimeout(()=>$("cl_"+k+"_a").focus(),0); claimUI(); updatePreview(); });
     /* under 16 km: never more than the meal's rate */
     $("cl_"+k+"_a").addEventListener("input",()=>{ const R=clRates||claimRates(), el=$("cl_"+k+"_a"), cap=$("cl_"+k+"_cap");
-      if(Number(el.value)>R[k]){ el.value=R[k].toFixed(2); cap.textContent="Capped at "+money(R[k])+", the "+MEALS.find(x=>x[0]===k)[1].toLowerCase()+" rate."; cap.hidden=false; } else cap.hidden=true;
+      if(Number(el.value)>R[k]){ el.value=fmtMoney(R[k]); cap.textContent="Capped at "+money(R[k])+", the "+MEALS.find(x=>x[0]===k)[1].toLowerCase()+" rate."; cap.hidden=false; } else cap.hidden=true;
       updatePreview(); });
     $("cl_"+k+"_rc").addEventListener("change",updatePreview);
   }
@@ -1572,9 +1587,9 @@ function addOtherRow(o){
   r.innerHTML=`<input type="text" maxlength="60" placeholder="What for (e.g. Uber)" aria-label="Expense ${n} description"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="$0.00" aria-label="Expense ${n} amount"><button type="button" class="odel danger" aria-label="Remove expense ${n}">✕</button><label class="ckline"><input type="checkbox"><span>I have the receipt</span></label>`;
   const [d,a]=r.querySelectorAll("input"), rc=r.querySelector("input[type=checkbox]");
   if(o){ d.value=o.desc||""; a.value=o.amt||""; rc.checked=!!o.receipt; }
-  [d,a].forEach(x=>x.addEventListener("input",updatePreview)); rc.addEventListener("change",updatePreview);
+  [d,a].forEach(x=>x.addEventListener("input",updatePreview)); rc.addEventListener("change",updatePreview); a.placeholder="0.00";
   r.querySelector(".odel").onclick=()=>{ r.remove(); updatePreview(); };
-  $("clOthers").append(r);
+  $("clOthers").append(r); moneyInput(a); formatMoneyBoxes(r);
 }
 function readOthers(){ return [...$("clOthers").querySelectorAll(".orow")].map(r=>{const [d,a]=r.querySelectorAll("input"); return {desc:d.value.trim(),amt:Math.max(0,r2(Number(a.value)||0)),receipt:r.querySelector("input[type=checkbox]").checked};}).filter(o=>o.amt>0||o.desc); }
 /* Running total inside the claim form: one line per category, grand total last. */
@@ -1633,11 +1648,11 @@ function renderLodgings(){
     const pv=document.createElement("span"); pv.className="privamt num";
     const del=document.createElement("button"); del.type="button"; del.className="odel danger"; del.textContent="✕"; del.setAttribute("aria-label","Remove accommodation "+(i+1));
     const rl=document.createElement("label"); rl.className="ckline"; const rc=document.createElement("input"); rc.type="checkbox"; rc.checked=!!l.receipt; const rt=document.createElement("span"); rt.textContent="I have the hotel receipt"; rl.append(rc,rt);
-    const sync=()=>{ const h=sel.value==="hotel"; amt.hidden=!h; rl.hidden=!h; pv.hidden=h; pv.textContent=(Number(ni.value)||0)+" × "+money(R.priv)+" = "+money(r2((Number(ni.value)||0)*R.priv)); };
+    const sync=()=>{ const h=sel.value==="hotel", box=amt.parentElement&&amt.parentElement.classList.contains("moneyin")?amt.parentElement:amt; box.hidden=!h; amt.hidden=false; rl.hidden=!h; pv.hidden=h; pv.textContent=(Number(ni.value)||0)+" × "+money(R.priv)+" = "+money(r2((Number(ni.value)||0)*R.priv)); };
     sel.onchange=()=>{ l.kind=sel.value; sync(); updatePreview(); }; ni.oninput=()=>{ l.nights=Math.max(1,Math.round(Number(ni.value)||1)); sync(); updatePreview(); };
     amt.oninput=()=>{ l.amt=amt.value; updatePreview(); }; rc.onchange=()=>{ l.receipt=rc.checked; updatePreview(); };
     del.onclick=()=>{ tripState.lodgings.splice(i,1); renderLodgings(); updatePreview(); };
-    sync(); r.append(sel,nw,del,amt,pv,rl); N.append(r);
+    amt.placeholder="Total for the stay"; sync(); r.append(sel,nw,del,amt,pv,rl); N.append(r); moneyInput(amt); formatMoneyBoxes(r);
   });
 }
 function tripDraft(){
@@ -1664,7 +1679,7 @@ function claimDraft(){
 }
 function fillClaimForm(e){
   clRates=e&&e.rates?{...e.rates}:null;
-  for(const [k] of MEALS){ const m=e&&e.meals&&e.meals[k]; $("cl_"+k).checked=!!m; $("cl_"+k+"_u").checked=!!(m&&m.under16); $("cl_"+k+"_a").value=m&&m.under16?m.amt:""; $("cl_"+k+"_rc").checked=!!(m&&m.receipt); $("cl_"+k+"_cap").hidden=true; }
+  for(const [k] of MEALS){ const m=e&&e.meals&&e.meals[k]; $("cl_"+k).checked=!!m; $("cl_"+k+"_u").checked=!!(m&&m.under16); $("cl_"+k+"_a").value=m&&m.under16?fmtMoney(m.amt):""; $("cl_"+k+"_rc").checked=!!(m&&m.receipt); $("cl_"+k+"_cap").hidden=true; }
   $("clInc").checked=!!(e&&e.inc); $("clKm").value=e&&e.km?e.km:""; $("clStart").value=e&&!e.trip&&e.start||""; $("clEnd").value=e&&!e.trip&&e.end||""; if(e&&!e.trip&&e.start&&e.end) markTimes("clStart","clEnd");
   $("clOthers").textContent=""; if(e) for(const o of claimParts(e).others) addOtherRow(o);
   /* trip fields */
