@@ -762,7 +762,7 @@ details.settings[open]>summary::after{content:"－"}
       </div>
       <div class="field"><label for="sRate">Hourly rate</label><input type="number" id="sRate" inputmode="decimal" min="0" step="0.01"></div>
       <div class="field"><label for="sCur">Currency symbol</label><input type="text" id="sCur" maxlength="3"></div>
-      <p class="hint">Your hourly rate is your annual salary ÷ 2,087.04. Your stub shows $5,277.41 for 80 hours, which matches Sgt. Step 2 ($137,677), so $65.97 an hour. Change this when you get a raise. Entries you already logged keep the rate they were saved with.</p>
+      <p class="hint">Your hourly rate is your annual salary ÷ 2,087.04. Pay is worked out with the exact rate ($137,677 ÷ 2,087.04 = $65.967590…) and only the dollar amount is rounded, the same way your pay stub does it. Your stub shows $5,277.41 for 80 hours, which matches Sgt. Step 2 ($137,677), so $65.97 an hour. Change this when you get a raise. Entries you already logged keep the rate they were saved with.</p>
       <div class="field full"><button type="submit" class="btn-primary">Save settings</button></div>
     </form>
   </details>
@@ -1015,8 +1015,15 @@ function paidHours(e,all){
 }
 /* 25.02: paid for each COMPLETED 15 minutes. */
 function floor15(h){return Math.floor(h*4+1e-9)/4;}
-/* Rate for an entry: the acting rate when it falls in a paid acting period (31.03/31.04), otherwise the rate saved with it. */
-function rateOf(e){ const a=(typeof actingRateFor==="function")?actingRateFor(e):0; return a||e.rate; }
+/* Pay uses the unrounded hourly rate, salary ÷ 2,087.04 (Art. 2), and rounds only the dollar amount, as your pay stub does
+   ($137,677 → $65.967590…/hr: 80 hrs = $5,277.41, 8 hrs OA = $527.74). The saved rate ($65.97) is that rate rounded for display;
+   when it matches the salary saved with the entry (or your current salary), the exact rate is used. */
+function baseRate(e){ const r=Number(e&&e.rate)||0;
+  for(const an of [Number(e&&e.annual),Number(typeof settings!=="undefined"&&settings?(settings.salary??DEFAULTS.salary):DEFAULTS.salary)]){
+    if(an>0&&Math.abs(an/2087.04-r)<0.005) return an/2087.04; }
+  return r; }
+/* Rate for an entry: the acting rate when it falls in a paid acting period (31.03/31.04), otherwise its own rate (exact). */
+function rateOf(e){ const a=(typeof actingRateFor==="function")?actingRateFor(e):0; return a||baseRate(e); }
 function expected(e){return Math.round(paidHours(e)*e.mult*rateOf(e)*100)/100;}
 function ltoCredit(e){return paidHours(e)*e.mult;}
 function spanHours(start,end){
@@ -1064,19 +1071,18 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.22.0";
+const APP_VERSION="2.22.1";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.22.1",date:"2026-11-21",kind:"patch",notes:[
+    "Pay is worked out with the exact hourly rate (salary ÷ 2,087.04 = $65.967590…), not $65.97, and only the dollar amount is rounded, matching your pay stub (8 hrs OA = $527.74)."]},
   {v:"2.22.0",date:"2026-11-21",kind:"minor",notes:[
     "Stat holidays (Article 23, with BC Day) are on the calendar. Work on a stat is 1.5× for every hour (23.08), a stat on your RTO moves to your next workday (23.06), and vacation over a stat only uses the hours above 8.",
     "On call only counts hours you're off duty: your scheduled shift is taken out (22.10), except on stats and leave days.",
     "On call that crosses the start or end of an acting period is split: only the hours inside it get the acting rate.",
     "Callbacks warn you if another one started within the minimum period (26.03), and the recalled-from-leave box says it's the 1st or 2nd day only (25.04(b), 26.07)."]},
   {v:"2.21.1",date:"2026-11-21",kind:"patch",notes:[
-    "Fixed acting pay: once you've acted 2 scheduled workdays, acting pay counts from your first acting day (31.01), so the qualifying days are paid too. Overtime in the period uses the acting rate from day 1."]},
-  {v:"2.21.0",date:"2026-11-21",kind:"minor",notes:[
-    "Acting pay (Article 31): add acting periods with the rank and dates. The app skips the 2-day qualifying period, works out the extra pay for each pay period to confirm against your stub, and pays overtime at the acting rate.",
-    "Acting pay shows in the Waiting and YTD totals, the Waiting tab, and as a band on the calendar."]}
+    "Fixed acting pay: once you've acted 2 scheduled workdays, acting pay counts from your first acting day (31.01), so the qualifying days are paid too. Overtime in the period uses the acting rate from day 1."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -1502,14 +1508,14 @@ function draft(){
   const prev=editingId&&entries[editingId];
   if($("fType").value==="oncall"){
     const a=$("ocStart").value,b=$("ocEnd").value, h=a&&b?windowHours(a,b):0;
-    return {date:a?a.slice(0,10):"",created:prev?prev.created:9e15,id:editingId||"_draft",type:"oncall",level:ocLevel(),ocStart:a,ocEnd:b,hours:h,mult:1,comp:comp(),rate:prev?prev.rate:settings.rate,why:""};
+    return {date:a?a.slice(0,10):"",created:prev?prev.created:9e15,id:editingId||"_draft",type:"oncall",level:ocLevel(),ocStart:a,ocEnd:b,hours:h,mult:1,comp:comp(),rate:prev?prev.rate:settings.rate,annual:prev?prev.annual:(settings.salary??DEFAULTS.salary),why:""};
   }
   let ar=autoRate($("fDate").value||today(),$("fRecalled").checked,settings.sched,settings.shift);
   const tU=timesUsed("fStart","fEnd"), tS=tU?$("fStart").value:null, tE=tU?$("fEnd").value:null;
   const dr=dayRates($("fDate").value||today(),tS,tE,$("fRecalled").checked,settings.sched,settings.shift);
   if(dr) ar={mult:dr.mult,why:"Split at midnight: "+segTxt(dr.segs)+". RTO ends at midnight (25.04).",segs:dr.segs};
   const ty=$("fType").value, ps=(ty==="callback"||ty==="callhome")?preShiftHours($("fDate").value||today(),tS,settings.sched,settings.shift):null;
-  return {id:editingId||"_draft",date:$("fDate").value||today(),created:prev?prev.created:9e15,type:ty,hours:Number($("fHours").value)||0,mult:ar.mult,segs:ar.segs||null,why:ar.why,comp:comp(),rate:prev?prev.rate:settings.rate,preShift:ps!=null};
+  return {id:editingId||"_draft",date:$("fDate").value||today(),created:prev?prev.created:9e15,type:ty,hours:Number($("fHours").value)||0,mult:ar.mult,segs:ar.segs||null,why:ar.why,comp:comp(),rate:prev?prev.rate:settings.rate,annual:prev?prev.annual:(settings.salary??DEFAULTS.salary),preShift:ps!=null};
 }
 function updatePreview(){
   const P=$("preview"); P.textContent=""; $("taxBox").hidden=true;
@@ -1541,7 +1547,7 @@ function updatePreview(){
   const b=document.createElement("b");
   if(d.comp==="bb"){b.textContent=hx(ltoCredit(d))+" hrs to black book"; P.append("Adds ",b," · not paid; take it as time off on a day you pick · "+(d.segs?segTxt(d.segs):stubH(ph)+" at "+multTxt(d.mult))+why);}
   else if(d.comp==="lto"){b.textContent=hx(ltoCredit(d))+" hrs LTO"; P.append("Earns ",b," · "+(d.segs?segTxt(d.segs):stubH(ph)+" at "+multTxt(d.mult))+why);}
-  else{ const R=rateOf(d), ra=money(R)+(R!==d.rate?" (acting)":""); b.textContent=money(expected(d)); P.append("Expected pay ",b," · "+(d.segs?segTxt(d.segs)+" × "+ra:stubH(ph)+" at "+multTxt(d.mult)+" × "+ra)+why); addNet(P,d);}
+  else{ const R=rateOf(d), ra=money(R)+(Math.abs(R-baseRate(d))>1e-9?" (acting)":""); b.textContent=money(expected(d)); P.append("Expected pay ",b," · "+(d.segs?segTxt(d.segs)+" × "+ra:stubH(ph)+" at "+multTxt(d.mult)+" × "+ra)+why); addNet(P,d);}
   if(cbWarn){ const w=document.createElement("span"); w.className="netp cbwarn"; w.textContent=cbWarn; P.append(w); }
 }
 function addNet(P,d){
@@ -1731,7 +1737,7 @@ $("otForm").addEventListener("submit",async ev=>{
     const prev=editingId?entries[editingId]:null;
     const e={id:prev?prev.id:"o"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
       type:"oncall",level:ocLevel(),date:a.slice(0,10),ocStart:a,ocEnd:b,start:null,end:null,hours:Math.round(wh*100)/100,mult:1,recalled:false,
-      comp:comp(),note:$("fNote").value.trim(),rate:prev?prev.rate:settings.rate,created:prev?prev.created:Date.now(),
+      comp:comp(),note:$("fNote").value.trim(),rate:prev?prev.rate:settings.rate,annual:prev?prev.annual:(settings.salary??DEFAULTS.salary),created:prev?prev.created:Date.now(),
       confirmed:prev?!!prev.confirmed:false,stubDate:prev?prev.stubDate||null:null,paid:prev?prev.paid??null:null};
     if(prev&&prev.confirmed){e.stubDate=$("fStub").value||null; const p=$("fPaid").value; e.paid=p===""?null:Math.round(Number(p)*100)/100;}
     const every=prev?0:Number($("ocRepeat").value), batch=[e];
@@ -1755,7 +1761,7 @@ $("otForm").addEventListener("submit",async ev=>{
     type:$("fType").value,date:$("fDate").value,start:timesUsed("fStart","fEnd")?$("fStart").value:null,end:timesUsed("fStart","fEnd")?$("fEnd").value:null,
     hours:h,mult:draft().mult,segs:draft().segs,recalled:$("fRecalled").checked,comp:comp(),note:$("fNote").value.trim(),
     preShift:(["callback","callhome"].includes($("fType").value)&&timesUsed("fStart","fEnd")&&preShiftHours($("fDate").value,$("fStart").value,settings.sched,settings.shift)!=null),
-    rate:prev?prev.rate:settings.rate,created:prev?prev.created:Date.now(),
+    rate:prev?prev.rate:settings.rate,annual:prev?prev.annual:(settings.salary??DEFAULTS.salary),created:prev?prev.created:Date.now(),
     confirmed:prev?!!prev.confirmed:false,stubDate:prev?prev.stubDate||null:null,paid:prev?prev.paid??null:null};
   if(prev&&prev.confirmed){e.stubDate=$("fStub").value||null; const p=$("fPaid").value; e.paid=p===""?null:Math.round(Number(p)*100)/100;}
   entries[e.id]=e; activeKey=payPeriod(e.date,settings.payStart).start; if(!prev&&filter==="done") filter="wait"; closeSheet(); render();
@@ -2267,10 +2273,10 @@ function offDutyDay(ds){ return vacOn(ds).length>0||ltoUses().some(u=>u.date===d
 function actOcSplit(e){
   if(!e||e.type!=="oncall"||!e.ocStart||typeof actEntries!=="function") return null;
   const tot=ocParts(e,CALC_ALL).counted; if(!tot) return null; let act=0, extra=0, rate=0;
-  for(const a of actEntries()){ const D=actDays(a); if(!D.from) continue; const r=actHr(a); if(!(r>(Number(e.rate)||0))) continue;
+  for(const a of actEntries()){ const D=actDays(a); if(!D.from) continue; const r=actHr(a), br=baseRate(e); if(!(r>br)) continue;
     const lo=toMs(D.from+"T00:00"), hi=a.endDate?toMs(addDaysStr(a.endDate,1)+"T00:00"):null, c=ocParts(e,CALC_ALL,lo,hi).counted;
-    if(c>0){ act+=c; extra+=c*(r-e.rate); rate=r; } }
-  return act>0?{tot,act,rate,blended:e.rate+extra/tot}:null;
+    if(c>0){ act+=c; extra+=c*(r-br); rate=r; } }
+  return act>0?{tot,act,rate,blended:baseRate(e)+extra/tot}:null;
 }
 let ACT_CACHE=null;
 /* Scheduled workdays in an acting period. You qualify after 2 scheduled workdays acting (31.06(a)); once you do, acting pay
@@ -2291,7 +2297,7 @@ function actDays(a){
 function actingRateFor(e){
   if(!e||!e.date||e.type==="claim"||e.type==="vac"||e.type==="acting"||e.type==="ltouse"||e.type==="actline") return 0;
   if(e.type==="oncall"&&e.ocStart){ const S=actOcSplit(e); return S?S.blended:0; }
-  for(const a of actEntries()){ const D=actDays(a); if(D.from&&e.date>=D.from&&e.date<=(a.endDate||"9999-12-31")){ const r=actHr(a); return r>(Number(e.rate)||0)?r:0; } }
+  for(const a of actEntries()){ const D=actDays(a); if(D.from&&e.date>=D.from&&e.date<=(a.endDate||"9999-12-31")){ const r=actHr(a); return r>baseRate(e)?r:0; } }
   return 0;
 }
 /* Acting pay by pay period: each is one line to confirm against the "Acting pay" line on your stub. */
