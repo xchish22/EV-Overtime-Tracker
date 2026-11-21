@@ -793,15 +793,16 @@ details.settings[open]>summary::after{content:"－"}
   <details class="card settings" id="actBox">
     <summary>Acting Pay<span id="actSum"></span></summary>
     <div class="vacbody">
-      <p class="hint">Acting in a higher rank pays the difference for every scheduled hour once the 2-day qualifying period is done (Article 31). Each pay period becomes one line to tick off against the Acting pay line on your stub.</p>
+      <p class="hint">Acting in a higher rank pays the difference for every scheduled hour from your first acting day, once you've acted 2 scheduled workdays (Article 31). Each pay period becomes one line to tick off against the Acting pay line on your stub.</p>
       <button type="button" class="btn-primary actbtn" id="actAdd">+ Add acting period</button>
       <div id="actList"></div>
       <details class="njcinfo actinfo"><summary><span class="ib" aria-hidden="true">i</span> How acting pay works (Article 31)</summary>
         <div class="njcbody">
-          <p><b>Qualifying period (31.06(a)):</b> 2 consecutive scheduled workdays in detachment and operational units. No acting pay for those 2 days.</p>
+          <p><b>Qualifying period (31.06(a)):</b> 2 consecutive scheduled workdays acting, in detachment and operational units. Act for only 1 day and there's no acting pay.</p>
+          <p><b>Once you qualify (31.01):</b> acting pay counts from the day you started acting, so the 2 qualifying days are paid too. Act 3 days, get paid for 3.</p>
           <p><b>Leave during qualifying (31.07, 31.08):</b> doesn't count toward the 2 days and isn't paid; you finish the qualifying days when you're back.</p>
           <p><b>After qualifying (31.03):</b> acting pay for all scheduled hours, including leave, LTO, and 8 hrs of a designated paid holiday you don't work.</p>
-          <p><b>Extra hours (31.03, 31.04):</b> overtime, callbacks and on call after the qualifying period are paid at the acting rate. The app does this automatically.</p>
+          <p><b>Extra hours (31.03, 31.04):</b> once you qualify, overtime, callbacks and on call in the acting period are paid at the acting rate. The app does this automatically.</p>
           <p><b>Not paid (31.05):</b> for example sick leave from the 31st consecutive day, leave without pay, or suspension over 20 workdays.</p>
           <p class="small">Rates are Appendix A (April 1, 2024 market adjustment). Stat holidays aren't on the app's calendar, so check those against your stub. Over 30 days, management enters the acting appointment in HRMIS (31.02).</p>
         </div></details>
@@ -1025,16 +1026,16 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.21.0";
+const APP_VERSION="2.21.1";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.21.1",date:"2026-11-21",kind:"patch",notes:[
+    "Fixed acting pay: once you've acted 2 scheduled workdays, acting pay counts from your first acting day (31.01), so the qualifying days are paid too. Overtime in the period uses the acting rate from day 1."]},
   {v:"2.21.0",date:"2026-11-21",kind:"minor",notes:[
     "Acting pay (Article 31): add acting periods with the rank and dates. The app skips the 2-day qualifying period, works out the extra pay for each pay period to confirm against your stub, and pays overtime at the acting rate.",
     "Acting pay shows in the Waiting and YTD totals, the Waiting tab, and as a band on the calendar."]},
   {v:"2.20.0",date:"2026-11-09",kind:"minor",notes:[
-    "The Overtime LTO, OA LTO and Black book bank bars moved from the top into the Vacation section, now called Vacation & Banked Hours."]},
-  {v:"2.19.1",date:"2026-11-09",kind:"patch",notes:[
-    "Black book has its own pink colour on the calendar, bank bar and tags, so it doesn't look like waiting (gold) or days off (tan)."]}
+    "The Overtime LTO, OA LTO and Black book bank bars moved from the top into the Vacation section, now called Vacation & Banked Hours."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -2205,16 +2206,19 @@ const m3=x=>"$"+x.toFixed(3);   /* per-hour rates to 3 decimals so the math adds
 const actEnd=a=>a.endDate||today();
 const isLeaveDay=ds=>vacOn(ds).length>0||ltoUses().some(u=>u.date===ds);
 let ACT_CACHE=null;
-/* Scheduled workdays in an acting period: the first 2 worked are the qualifying period (31.06(a), no acting pay);
-   leave during it doesn't count or pay (31.07/31.08); after it, every scheduled workday pays, leave included (31.03). */
+/* Scheduled workdays in an acting period. You qualify after 2 scheduled workdays acting (31.06(a)); once you do, acting pay
+   runs from the first day you acted (31.01), qualifying days included. Leave during the qualifying period doesn't count toward it
+   and isn't paid (31.07/31.08). After qualifying, every scheduled workday pays, leave included (31.03). Not qualified = no acting pay. */
 function actDays(a){
   ACT_CACHE=ACT_CACHE||{}; const key=a.id+"|"+a.date+"|"+actEnd(a)+"|"+(a.skipQual?1:0); if(ACT_CACHE[key]) return ACT_CACHE[key];
-  const sch=settings.sched||DEFAULTS.sched, need=a.skipQual?0:2, qual=[], leaveQual=[], paid=[];
+  const sch=settings.sched||DEFAULTS.sched, need=a.skipQual?0:2, qual=[], leaveQual=[];
+  const after=[];
   for(const ds of dateRange(a.date,actEnd(a))){ if(sch[pd(ds).getDay()]!=="work") continue;
-    if(qual.length<need){ if(isLeaveDay(ds)) leaveQual.push(ds); else qual.push(ds); } else paid.push(ds); }
-  /* acting rate for extra hours starts once the qualifying period is done */
-  const from=need===0?a.date:(qual.length>=need?addDaysStr(qual[need-1],1):null);
-  return ACT_CACHE[key]={qual,leaveQual,paid,from};
+    if(qual.length<need){ if(isLeaveDay(ds)) leaveQual.push(ds); else qual.push(ds); } else after.push(ds); }
+  const ok=qual.length>=need;
+  /* qualified: paid from the first day (qualifying days too) and extra hours at the acting rate from the start (31.01, 31.04) */
+  const paid=ok?[...qual,...after].sort():[], from=ok?a.date:null;
+  return ACT_CACHE[key]={qual,leaveQual,paid,from,ok};
 }
 /* Overtime, callbacks, court and on call in a paid acting period use the acting rate (31.03, 31.04). */
 function actingRateFor(e){
@@ -2284,9 +2288,9 @@ function actPreview(){
   const P=$("actPrev"); if(!a.date||!a.annual){ P.textContent="Pick the first day and the rank."; return; }
   ACT_CACHE=null; const D=actDays(a), diff=actDiff(a), sh=shiftHrs();
   const lines=["Acting rate "+money(actHr(a))+"/hr, "+money(diff)+"/hr more than your "+money(actBase(a))+"."];
-  if(!a.skipQual) lines.push(D.qual.length<2?"Qualifying period (2 scheduled workdays, 31.06): "+(D.qual.map(nice).join(", ")||"none yet")+(D.qual.length<2?" (not finished)":""):"Qualifying days, no acting pay (31.06): "+D.qual.map(nice).join(", ")+".");
-  if(D.leaveQual.length) lines.push("Leave during qualifying doesn't count or pay (31.08): "+D.leaveQual.map(nice).join(", ")+".");
-  lines.push(D.paid.length+" paid day"+(D.paid.length===1?"":"s")+(a.endDate?"":" so far")+" × "+hrs(sh)+" hrs × "+m3(diff)+" = "+money(D.paid.length*sh*diff)+". Overtime from "+(D.from?nice(D.from):"after qualifying")+" uses the acting rate (31.04).");
+  if(!a.skipQual) lines.push(D.ok?"Qualified on "+nice(D.qual[1])+" (2 scheduled workdays, 31.06), so acting pay counts from "+nice(a.date)+" (31.01).":"Not qualified yet: "+D.qual.length+" of 2 scheduled workdays acting (31.06). No acting pay unless you reach 2.");
+  if(D.leaveQual.length) lines.push("Leave during qualifying doesn't count and isn't paid (31.08): "+D.leaveQual.map(nice).join(", ")+".");
+  lines.push(D.paid.length+" paid day"+(D.paid.length===1?"":"s")+(a.endDate?"":" so far")+" × "+hrs(sh)+" hrs × "+m3(diff)+" = "+money(D.paid.length*sh*diff)+"."+(D.ok?" Overtime from "+nice(D.from)+" uses the acting rate (31.04).":""));
   P.textContent=lines.join(" ");
 }
 function openAct(a,ds){
@@ -2327,7 +2331,7 @@ function renderAct(){
   for(const a of list){ const D=actDays(a), sh=shiftHrs(), ls=all.filter(l=>l.act.id===a.id);
     const r=document.createElement("div"); r.className="actper";
     const h=document.createElement("div"); h.className="vtxt"; const st=document.createElement("strong"); st.textContent="Acting "+a.rank+" · "+nice(a.date)+" – "+(a.endDate?nice(a.endDate):"still acting");
-    const s1=document.createElement("small"); s1.textContent=money(actHr(a))+"/hr (+"+money(actDiff(a))+"/hr) · "+(a.skipQual?"qualifying already done":"qualifying: "+(D.qual.map(nice).join(", ")||"not yet")+(D.qual.length<2&&!a.skipQual?" (not finished)":""));
+    const s1=document.createElement("small"); s1.textContent=money(actHr(a))+"/hr (+"+money(actDiff(a))+"/hr) · "+(a.skipQual?"qualifying already done":D.ok?"qualified "+nice(D.qual[1])+", paid from day 1":"not qualified yet ("+D.qual.length+" of 2 workdays)");
     const s2=document.createElement("small"); s2.textContent=D.paid.length+" paid day"+(D.paid.length===1?"":"s")+" = "+hrs(D.paid.length*sh)+" hrs × "+m3(actDiff(a))+" = "+money(ls.reduce((q,l)=>q+l.amt,0))+" · "+ls.filter(l=>l.confirmed).length+" of "+ls.length+" pay period"+(ls.length===1?"":"s")+" confirmed";
     h.append(st,s1,s2); if(a.note){const n=document.createElement("small"); n.textContent=a.note; h.append(n);}
     const ed=document.createElement("button"); ed.type="button"; ed.textContent="Edit"; ed.onclick=()=>openAct(a);
