@@ -156,6 +156,10 @@ details.settings>summary{cursor:pointer;padding:14px 16px;font-family:var(--f-di
 .sw.bbsw{background:repeating-linear-gradient(135deg,var(--bb) 0 3px,color-mix(in srgb,var(--bb) 45%,var(--surface)) 3px 6px)}
 .tag.bbt{border-color:var(--bb);color:var(--bb)}
 .pbar .seg.bb{background:#ff6fb5}
+.day .rt.stat{color:var(--ok);font-weight:800;letter-spacing:.02em}
+.day.dph{box-shadow:inset 0 0 0 2px var(--ok)}
+.cbwarn{display:block;color:var(--bad)!important;font-weight:600;margin-top:6px}
+.statlg{color:var(--ok);font-size:.7rem;font-weight:800}
 .day .actband{position:absolute;left:0;right:0;top:0;height:5px;background:var(--act);z-index:3;pointer-events:none}
 .tag.actt{border-color:var(--act);color:var(--act)}
 .mathbox.isact{border-left-color:var(--act)}
@@ -523,7 +527,7 @@ details.settings[open]>summary::after{content:"－"}
         <div class="cal" aria-label="Calendar">
           <div class="calhead"><button type="button" id="calPrev" aria-label="Previous month">‹</button><strong id="calTitle">—</strong><button type="button" id="calNext" aria-label="Next month">›</button></div>
           <div class="calgrid" id="calGrid"></div>
-          <div class="callegend"><span><i class="sw" style="background:var(--accent-soft);border:1px solid var(--accent)"></i>RTO, paid 2×</span><span><i class="sw" style="background:var(--ink)"></i>Pay period starts</span><span><i class="sw" style="background:var(--work)"></i>Your shift</span><span><i class="sw" style="background:var(--otc)"></i>Overtime</span><span><i class="sw" style="background:var(--oc)"></i>On call</span><span><i class="sw" style="background:var(--vac)"></i>Vacation</span><span><i class="sw bbsw"></i>Black book day</span><span><i class="sw" style="background:var(--act);height:4px;align-self:flex-start;margin-top:5px"></i>Acting</span><span><b style="color:var(--cl);font-size:.8rem">$</b> Travel expenses</span><span><i class="sw" style="background:var(--accent)"></i>Waiting (hrs)</span><span><i class="sw" style="background:var(--ok)"></i>Confirmed</span></div>
+          <div class="callegend"><span><i class="sw" style="background:var(--accent-soft);border:1px solid var(--accent)"></i>RTO, paid 2×</span><span><i class="sw" style="background:var(--ink)"></i>Pay period starts</span><span><i class="sw" style="background:var(--work)"></i>Your shift</span><span><i class="sw" style="background:var(--otc)"></i>Overtime</span><span><i class="sw" style="background:var(--oc)"></i>On call</span><span><i class="sw" style="background:var(--vac)"></i>Vacation</span><span><i class="sw bbsw"></i>Black book day</span><span><i class="sw" style="background:var(--act);height:4px;align-self:flex-start;margin-top:5px"></i>Acting</span><span><b style="color:var(--cl);font-size:.8rem">$</b> Travel expenses</span><span><i class="sw" style="background:var(--accent)"></i>Waiting (hrs)</span><span><i class="sw" style="background:var(--ok)"></i>Confirmed</span><span><b class="statlg">STAT</b> Stat holiday</span></div>
         </div>    </div>
     <div class="calfoot"><button type="button" class="btn-primary" id="logToday">Log time for today</button></div>
   </section>
@@ -557,7 +561,7 @@ details.settings[open]>summary::after{content:"－"}
       <div class="field wk"><label for="fHours">Hours worked</label><input type="number" id="fHours" inputmode="decimal" min="0" step="0.25" placeholder="or type hours"></div>
       <div class="ratebox wk" aria-live="polite">
         <div class="rv"><span class="label">Rate</span><b id="rateVal">1.5×</b><span id="rateWhy"></span></div>
-        <label class="ckline"><input type="checkbox" id="fRecalled">Recalled from annual leave or LTO (leave not reinstated)</label>
+        <label class="ckline"><input type="checkbox" id="fRecalled">Recalled on the 1st or 2nd day of annual leave or LTO, or chose to work during leave (leave not reinstated, 2×). From the 3rd day your leave is reinstated (26.07).</label>
       </div>
       <div class="clbox" id="clBox" hidden>
         <div class="seg" role="radiogroup" aria-label="Claim length">
@@ -859,13 +863,35 @@ function shiftSplit(dateStr,start,end,sched,shift){
   if(!start||!end) return null;
   const sc=sched||DEFAULTS.sched, sh=shift||DEFAULTS.shift, ss=mins(sh.start), se=mins(sh.end), dow=dowOf(dateStr);
   let a=mins(start), b=mins(end); if(b<=a) b+=1440; let inside=0;
-  for(const k of [0,1]){ if(sc[(dow+k)%7]!=="work") continue; inside+=Math.max(0,Math.min(b,se+1440*k)-Math.max(a,ss+1440*k)); }
+  for(const k of [0,1]){ if(sc[(dow+k)%7]!=="work"||dphOn(addD(dateStr,k),sc)) continue; inside+=Math.max(0,Math.min(b,se+1440*k)-Math.max(a,ss+1440*k)); }
   return {total:(b-a)/60,inside:inside/60,outside:(b-a-inside)/60};
 }
+/* ---- Designated paid holidays (Article 23) ---- */
+const addD=(d,n)=>{const [y,m,dd]=d.split("-").map(Number);return new Date(Date.UTC(y,m-1,dd+n)).toISOString().slice(0,10);};
+const ymd=(y,m,d)=>y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+function easterSun(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1; return ymd(y,mo,da); }
+function nthMon(y,m,n){ const first=new Date(Date.UTC(y,m-1,1)).getUTCDay(), d=1+((8-first)%7)+7*(n-1); return ymd(y,m,d); }
+/* 23.01 holidays; (l) the provincial day is BC Day (first Monday in August). */
+function dphList(y){ const es=easterSun(y), vic=(()=>{const d=new Date(Date.UTC(y,4,24)); return ymd(y,5,24-((d.getUTCDay()+6)%7));})();
+  return [[ymd(y,1,1),"New Year's Day"],[addD(es,-2),"Good Friday"],[addD(es,1),"Easter Monday"],[vic,"Victoria Day"],[ymd(y,7,1),"Canada Day"],[nthMon(y,8,1),"BC Day"],
+          [nthMon(y,9,1),"Labour Day"],[ymd(y,9,30),"Truth and Reconciliation Day"],[nthMon(y,10,2),"Thanksgiving"],[ymd(y,11,11),"Remembrance Day"],[ymd(y,12,25),"Christmas Day"],[ymd(y,12,26),"Boxing Day"]]; }
+const DPH_CACHE={};
+/* 23.06: a holiday on your regular time off (RTO) moves to your first scheduled workday after it (two in a row move to the first two). */
+function dphMap(y,sched){ const sc=sched||DEFAULTS.sched, key=y+"|"+sc.join(); if(DPH_CACHE[key]) return DPH_CACHE[key];
+  const list=dphList(y), taken=new Set(list.map(x=>x[0])), map={};
+  for(const [d,name] of list){ if(sc[dowOf(d)]!=="rto"){ map[d]={name}; continue; }
+    let n=addD(d,1); for(let i=0;i<14&&(sc[dowOf(n)]!=="work"||taken.has(n)||map[n]);i++) n=addD(n,1);
+    map[n]={name,movedFrom:d}; taken.add(n); }
+  return DPH_CACHE[key]=map; }
+function dphOn(ds,sched){ if(!ds) return null; const y=+ds.slice(0,4); return dphMap(y,sched)[ds]||dphMap(y-1,sched)[ds]||null; }
+/* Settings the calculations need (falls back to defaults outside the app). */
+const curSched=()=>(typeof settings!=="undefined"&&settings&&settings.sched)||DEFAULTS.sched;
+const curShift=()=>(typeof settings!=="undefined"&&settings&&settings.shift)||DEFAULTS.shift;
+const onLeave=ds=>typeof offDutyDay==="function"&&offDutyDay(ds);
 /* 26.04: called back within 3 hours before a scheduled shift -> paid for the time worked before the shift starts, no 3-hour minimum. */
 function preShiftHours(dateStr,start,sched,shift){
   if(!start) return null; const sc=sched||DEFAULTS.sched, ss=mins((shift||DEFAULTS.shift).start), st=mins(start);
-  return sc[dowOf(dateStr)]==="work"&&st<ss&&ss-st<=180 ? (ss-st)/60 : null;
+  return sc[dowOf(dateStr)]==="work"&&!dphOn(dateStr,sc)&&st<ss&&ss-st<=180 ? (ss-st)/60 : null;
 }
 /* Bi-weekly pay periods: 14-day blocks counted from any known period start. Returns {start,end} as YYYY-MM-DD. */
 function payPeriod(dateStr,anchor){
@@ -884,7 +910,8 @@ const DAYNAME=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Satu
 /* Decide the overtime rate from the day, per clause 25.04. sched[dow] is work | tow | rto. */
 function autoRate(dateStr,recalled,sched,shift){
   const [y,m,d]=dateStr.split("-").map(Number); const dow=new Date(y,m-1,d).getDay(); const kind=(sched||DEFAULTS.sched)[dow];
-  if(recalled) return {mult:2,why:"Recalled from leave, leave not reinstated (25.04(b)(ii))"};
+  if(recalled) return {mult:2,why:"Recalled on the 1st or 2nd day of leave, or chose to work during leave, leave not reinstated (25.04(b)(ii), (iii))"};
+  { const h=dphOn(dateStr,sched); if(h) return {mult:1.5,why:h.name+(h.movedFrom?" (moved from "+dayLbl(h.movedFrom)+", 23.06)":"")+" is a stat holiday: all hours at 1.5×, plus your 8 hrs holiday pay (23.08)"}; }
   if(kind==="rto") return {mult:2,why:DAYNAME[dow]+" is regular time off (25.04(b)(i))"};
   if(kind==="tow") return {mult:1.5,why:DAYNAME[dow]+" is time off work on your compressed plan (25.04(a)(ii))"};
   const sh=shift||DEFAULTS.shift;
@@ -896,7 +923,7 @@ function dayRates(dateStr,start,end,recalled,sched,shift){
   if(!start||!end) return null;
   const sc=sched||DEFAULTS.sched, sh=shift||DEFAULTS.shift, ss=mins(sh.start), se=mins(sh.end), dow=dowOf(dateStr);
   let a=mins(start), b=mins(end); if(b<=a) b+=1440; if(b<=1440) return null;
-  const out=(lo,hi,k)=>{let t=hi-lo; if(sc[(dow+k)%7]==="work") t-=Math.max(0,Math.min(hi,se+1440*k)-Math.max(lo,ss+1440*k)); return Math.max(0,t)/60;};
+  const out=(lo,hi,k)=>{let t=hi-lo; if(sc[(dow+k)%7]==="work"&&!dphOn(addD(dateStr,k),sc)) t-=Math.max(0,Math.min(hi,se+1440*k)-Math.max(lo,ss+1440*k)); return Math.max(0,t)/60;};
   const [y,m,d]=dateStr.split("-").map(Number), next=new Date(Date.UTC(y,m-1,d+1)).toISOString().slice(0,10);
   const h1=out(a,1440,0), h2=out(1440,b,1), r1=autoRate(dateStr,recalled,sc,sh), r2=autoRate(next,recalled,sc,sh), tot=h1+h2;
   if(r1.mult===r2.mult||!tot||!h1||!h2) return null;
@@ -961,18 +988,29 @@ function toMs(dt){const [d,t]=dt.split("T");const [y,m,dd]=d.split("-").map(Numb
 function windowHours(a,b){return (toMs(b)-toMs(a))/3600000;}
 function basePaid(e){const t=TYPES[e.type]||TYPES.ot; if(e.preShift) return floor15(e.hours); return Math.max(t.min,floor15(e.hours));}
 /* 22.14 / 30.07: hours paid as overtime, callback or court can't also be paid as on-call. Returns those paid hours inside the on-call window. */
-function ocDeduct(e,all){
-  const a=toMs(e.ocStart), b=toMs(e.ocEnd); let h=0;
+/* On-call hours between lo and hi (ms, optional): the window, less your scheduled shift (on call is only paid while off duty, 22.06/22.10;
+   stats and leave days have no shift), less hours already paid as overtime, callback or court (22.14). */
+function ocParts(e,all,lo,hi){
+  let a=toMs(e.ocStart), b=toMs(e.ocEnd); const full=lo==null&&hi==null;
+  if(lo!=null) a=Math.max(a,lo); if(hi!=null) b=Math.min(b,hi);
+  if(!(b>a)) return {win:0,shift:0,ded:0,counted:0};
+  const sc=curSched(), sh=curShift(), ss=mins(sh.start), se=mins(sh.end), DAY=86400000; let shiftMs=0;
+  for(let t=Math.floor(a/DAY)*DAY-DAY; t<b; t+=DAY){ const ds=new Date(t).toISOString().slice(0,10);
+    if(sc[dowOf(ds)]!=="work"||dphOn(ds,sc)||onLeave(ds)) continue;
+    let s0=t+ss*60000, s1=t+se*60000; if(s1<=s0) s1+=DAY; shiftMs+=Math.max(0,Math.min(b,s1)-Math.max(a,s0)); }
+  let ded=0;
   for(const c of all||[]){
     if(c.id===e.id||c.type==="oncall") continue;
     const claim=basePaid(c);
-    if(c.start){ const cs=toMs(c.date+"T"+c.start); h+=Math.max(0,Math.min(b,cs+claim*3600000)-Math.max(a,cs))/3600000; }
-    else if(c.date>=e.ocStart.slice(0,10)&&c.date<=e.ocEnd.slice(0,10)) h+=claim;
+    if(c.start){ const cs=toMs(c.date+"T"+c.start); ded+=Math.max(0,Math.min(b,cs+claim*3600000)-Math.max(a,cs))/3600000; }
+    else if(full&&c.date>=e.ocStart.slice(0,10)&&c.date<=e.ocEnd.slice(0,10)) ded+=claim;
   }
-  return Math.min(h,Math.max(0,e.hours));
+  const win=(b-a)/3600000, shift=shiftMs/3600000; ded=Math.min(ded,Math.max(0,win-shift));
+  return {win,shift,ded,counted:Math.max(0,win-shift-ded)};
 }
+function ocDeduct(e,all){ return ocParts(e,all).ded; }
 function paidHours(e,all){
-  if(e.type==="oncall"){const ded=ocDeduct(e,all||CALC_ALL);return Math.max(0,e.hours-ded)/(OC[e.level]||OC.OA).div;}
+  if(e.type==="oncall"){ return ocParts(e,all||CALC_ALL).counted/(OC[e.level]||OC.OA).div; }
   return basePaid(e);
 }
 /* 25.02: paid for each COMPLETED 15 minutes. */
@@ -1026,16 +1064,19 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.21.1";
+const APP_VERSION="2.22.0";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.22.0",date:"2026-11-21",kind:"minor",notes:[
+    "Stat holidays (Article 23, with BC Day) are on the calendar. Work on a stat is 1.5× for every hour (23.08), a stat on your RTO moves to your next workday (23.06), and vacation over a stat only uses the hours above 8.",
+    "On call only counts hours you're off duty: your scheduled shift is taken out (22.10), except on stats and leave days.",
+    "On call that crosses the start or end of an acting period is split: only the hours inside it get the acting rate.",
+    "Callbacks warn you if another one started within the minimum period (26.03), and the recalled-from-leave box says it's the 1st or 2nd day only (25.04(b), 26.07)."]},
   {v:"2.21.1",date:"2026-11-21",kind:"patch",notes:[
     "Fixed acting pay: once you've acted 2 scheduled workdays, acting pay counts from your first acting day (31.01), so the qualifying days are paid too. Overtime in the period uses the acting rate from day 1."]},
   {v:"2.21.0",date:"2026-11-21",kind:"minor",notes:[
     "Acting pay (Article 31): add acting periods with the rank and dates. The app skips the 2-day qualifying period, works out the extra pay for each pay period to confirm against your stub, and pays overtime at the acting rate.",
-    "Acting pay shows in the Waiting and YTD totals, the Waiting tab, and as a band on the calendar."]},
-  {v:"2.20.0",date:"2026-11-09",kind:"minor",notes:[
-    "The Overtime LTO, OA LTO and Black book bank bars moved from the top into the Vacation section, now called Vacation & Banked Hours."]}
+    "Acting pay shows in the Waiting and YTD totals, the Waiting tab, and as a band on the calendar."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -1135,9 +1176,12 @@ function mathBox(e,all){
 }
 /* Plain-language on-call math, as two short lines. */
 function ocMathLines(e,all){
-  const ded=ocDeduct(e,all), lv=OC[e.level]||OC.OA, net=Math.max(0,e.hours-ded), ph=paidHours(e,all);
-  return ded>0 ? [ hrU(e.hours)+" on call − "+hrU(ded)+" worked", "= "+hrU(net)+" ÷ "+lv.div+" = "+hrU(ph)+" paid" ]
-               : [ hrU(e.hours)+" on call", "÷ "+lv.div+" = "+hrU(ph)+" paid" ];
+  const P=ocParts(e,all), lv=OC[e.level]||OC.OA, ph=paidHours(e,all), out=[];
+  const minus=(P.shift?" − "+hrU(Math.round(P.shift*100)/100)+" your shift":"")+(P.ded?" − "+hrU(Math.round(P.ded*100)/100)+" worked":"");
+  out.push(minus?hrU(Math.round(P.win*100)/100)+" on call"+minus:hrU(Math.round(P.win*100)/100)+" on call");
+  out.push((minus?"= "+hrU(Math.round(P.counted*100)/100)+" ":"")+"÷ "+lv.div+" = "+hrU(ph)+" paid");
+  const ar=actOcSplit(e); if(ar&&ar.act>0) out.push(ar.act>=ar.tot-1e-9?"All at the acting rate "+money(ar.rate)+" (31.03)":hrs(Math.round(ar.act/lv.div*10000)/10000)+" hrs at acting "+money(ar.rate)+" + "+hrs(Math.round((ar.tot-ar.act)/lv.div*10000)/10000)+" hrs at "+money(e.rate)+" (31.03)");
+  return out;
 }
 const ocLevel=()=>document.querySelector('input[name="ocl"]:checked').value;
 function setOcLevel(v){document.querySelectorAll('input[name="ocl"]').forEach(r=>r.checked=r.value===v);}
@@ -1478,13 +1522,18 @@ function updatePreview(){
   if(d.type==="oncall"){
     if(!(d.hours>0)){P.textContent="Set the on-call start and finish.";return;}
     const ded=ocDeduct(d,workEntries()), ph=paidHours(d,workEntries()), lv=OC[d.level], b=document.createElement("b");
-    const how=hrs(d.hours)+" hrs on call"+(ded>0?" − "+hrs(ded)+" hrs worked":"")+" ÷ "+lv.div+" = "+hrs(ph)+" hrs at straight time ("+lv.ref+")";
+    const OP=ocParts(d,workEntries()); const how=hrs(Math.round(OP.win*100)/100)+" hrs on call"+(OP.shift?" − "+hrs(Math.round(OP.shift*100)/100)+" hrs your shift":"")+(OP.ded>0?" − "+hrs(Math.round(OP.ded*100)/100)+" hrs worked":"")+" ÷ "+lv.div+" = "+hrs(ph)+" hrs at straight time ("+lv.ref+")";
     if(d.comp==="bb"){b.textContent=hx(ph)+" hrs to black book";P.append("Adds ",b," · "+how);}
     else if(d.comp==="lto"){b.textContent=hrs(ph)+" hrs on-call LTO";P.append("Earns ",b," · "+how);}
     else{b.textContent=money(expected({...d,hours:d.hours},workEntries()));P.append("Expected pay ",b," · "+how);addNet(P,d);}
     return;
   }
   if(!d.hours){P.textContent="Enter start and finish times, or type the hours.";return;}
+  /* 26.03 / 26.06: another callback of the same kind starting inside this one's minimum period */
+  let cbWarn="";
+  if((d.type==="callback"||d.type==="callhome")&&timesUsed("fStart","fEnd")){ const win=d.type==="callback"?3:1, cur=toMs(d.date+"T"+$("fStart").value);
+    const o=workEntries().find(c=>c.id!==editingId&&c.type===d.type&&c.start&&Math.abs(toMs(c.date+"T"+c.start)-cur)<win*3600000);
+    if(o) cbWarn="Another "+(d.type==="callback"?"callback":"callback at home")+" started at "+tLabel(o.start)+" on "+nice(o.date)+", less than "+win+" hr"+(win>1?"s":"")+" from this one. You get one "+win+"-hr minimum plus time beyond it ("+(d.type==="callback"?"26.03":"26.06")+"), not a new minimum: add this time to that callback instead."; }
   const ph=paidHours(d), typ=TYPES[d.type];
   let why=""; if(d.preShift) why=" (26.04: called back within 3 hrs of your shift, paid until it starts, no minimum)"; else if(ph>d.hours) why=" ("+typ.ref+")"; else if(ph<d.hours) why=" (paid in completed 15 min blocks, 25.02)";
   const sp=timesUsed("fStart","fEnd")?shiftSplit($("fDate").value||today(),$("fStart").value,$("fEnd").value,settings.sched,settings.shift):null;
@@ -1492,7 +1541,8 @@ function updatePreview(){
   const b=document.createElement("b");
   if(d.comp==="bb"){b.textContent=hx(ltoCredit(d))+" hrs to black book"; P.append("Adds ",b," · not paid; take it as time off on a day you pick · "+(d.segs?segTxt(d.segs):stubH(ph)+" at "+multTxt(d.mult))+why);}
   else if(d.comp==="lto"){b.textContent=hx(ltoCredit(d))+" hrs LTO"; P.append("Earns ",b," · "+(d.segs?segTxt(d.segs):stubH(ph)+" at "+multTxt(d.mult))+why);}
-  else{b.textContent=money(expected(d)); P.append("Expected pay ",b," · "+(d.segs?segTxt(d.segs)+" × "+money(d.rate):stubH(ph)+" at "+multTxt(d.mult)+" × "+money(d.rate))+why); addNet(P,d);}
+  else{ const R=rateOf(d), ra=money(R)+(R!==d.rate?" (acting)":""); b.textContent=money(expected(d)); P.append("Expected pay ",b," · "+(d.segs?segTxt(d.segs)+" × "+ra:stubH(ph)+" at "+multTxt(d.mult)+" × "+ra)+why); addNet(P,d);}
+  if(cbWarn){ const w=document.createElement("span"); w.className="netp cbwarn"; w.textContent=cbWarn; P.append(w); }
 }
 function addNet(P,d){
   const prev=editingId&&entries[editingId], pv=$("fPaid").value, useStub=!!(prev&&prev.confirmed&&pv!=="");
@@ -1543,7 +1593,7 @@ $("fType").addEventListener("change",()=>{ const ty=$("fType").value;
   if(ty==="oncall") fillOcWindow($("fDate").value||today());
   else if(lastType==="oncall"&&!editingId&&sheetDay){   /* on call moved the date to the window's start; put back the day you tapped */
     $("fDate").value=sheetDay; calMonth=sheetDay.slice(0,7); sheetDateTxt(); lockOtOption();
-    if(!timesUsed("fStart","fEnd")){ $("fStart").value=(settings.sched||DEFAULTS.sched)[dowOf(sheetDay)]==="work"?(settings.shift||DEFAULTS.shift).end:""; $("fEnd").value=""; if(!$("fHours").dataset.typed) $("fHours").value=""; }
+    if(!timesUsed("fStart","fEnd")){ $("fStart").value=(settings.sched||DEFAULTS.sched)[dowOf(sheetDay)]==="work"&&!dphOn(sheetDay,settings.sched||DEFAULTS.sched)?(settings.shift||DEFAULTS.shift).end:""; $("fEnd").value=""; if(!$("fHours").dataset.typed) $("fHours").value=""; }
     renderCal(); }
   if(ty==="claim"&&!editingId&&!claimInit){ fillClaimForm(null); claimInit=true; }   /* start the form once; switching away and back keeps what you entered */
   lastType=ty; setMode(); updatePreview(); });
@@ -1579,13 +1629,14 @@ function lockOtOption(){
 }
 function openSheet(ds){
   resetForm(); sheetDay=ds; $("fDate").value=ds; calMonth=ds.slice(0,7);
-  if((settings.sched||DEFAULTS.sched)[dowOf(ds)]==="work") $("fStart").value=(settings.shift||DEFAULTS.shift).end;
+  if((settings.sched||DEFAULTS.sched)[dowOf(ds)]==="work"&&!dphOn(ds,settings.sched||DEFAULTS.sched)) $("fStart").value=(settings.shift||DEFAULTS.shift).end;
   lockOtOption();
   sheetDateTxt(); renderDayHas(); setViewMode(dayEntries(ds).length>0||vacOn(ds).length>0); updatePreview(); renderCal(); showSheet();
 }
 function sheetDateTxt(){
   const v=$("fDate").value||today(), d=pd(v), kind=(settings.sched||DEFAULTS.sched)[d.getDay()];
-  const k=kind==="rto"?" · Regular time off":kind==="tow"?" · Time off work":"";
+  const hol=dphOn(v,settings.sched||DEFAULTS.sched);
+  const k=hol?" · Stat holiday ("+hol.name+(hol.movedFrom?", moved from "+nice(hol.movedFrom):"")+")":kind==="rto"?" · Regular time off":kind==="tow"?" · Time off work":"";
   $("sheetDate").textContent=($("fType").value==="oncall"?"On call starting ":"")+DAYNAME[d.getDay()]+", "+fmtD(v)+k;
 }
 /* Entries already logged on the picked day, so they can be opened from the pop-up. */
@@ -1781,6 +1832,8 @@ function renderCal(){
     if(actA){ const ab=document.createElement("i"); ab.className="actband"; b.append(ab); }
     if(isVac){ b.classList.add("vacd"); const vf=document.createElement("i"); vf.className="vacfill"; b.append(vf); }
     else if(bbH){ b.classList.add("vacd","bbd"); const vf=document.createElement("i"); vf.className="vacfill bbfill"; b.append(vf); }
+    const hol=dphOn(ds,sch); if(hol) b.classList.add("dph");
+    if(hol){}
     else if(kind==="work"){ const sh=settings.shift||DEFAULTS.shift, sb=document.createElement("i"); sb.className="shiftband"; sb.style.left=(mins(sh.start)/14.4)+"%"; sb.style.width=((mins(sh.end)-mins(sh.start))/14.4)+"%"; b.append(sb); if(mins(sh.start)<=605&&mins(sh.end)>=835) b.classList.add("shiftmid"); }
     if(isOc){ const segs=coverSegs(ocWins,d0,d1);
       if(segs.some(([a,z])=>a<=0.42&&z>=0.58)) b.classList.add("ocfull");
@@ -1788,10 +1841,11 @@ function renderCal(){
     const otSegs=coverSegs(otWins,d0,d1);
     if(otSegs.length){ b.classList.add("otd"); for(const [a,z] of otSegs){ const g=document.createElement("i"); g.className="gauge ot"; g.style.left=(a*100)+"%"; g.style.width=((z-a)*100)+"%"; b.append(g); } }
     const n=document.createElement("span"); n.className="dn"; n.textContent=d; b.append(n);
-    if(kind!=="work"){const r=document.createElement("span"); r.className="rt"; r.textContent=kind==="rto"?"2×":"TOW"; b.append(r);}
+    if(hol){const r=document.createElement("span"); r.className="rt stat"; r.textContent="STAT"; b.append(r);}
+    else if(kind!=="work"){const r=document.createElement("span"); r.className="rt"; r.textContent=kind==="rto"?"2×":"TOW"; b.append(r);}
     if(clDates.has(ds)){ const cm=document.createElement("span"); cm.className="clmark"; cm.textContent="$"; b.append(cm); }
     if(tripDates.has(ds)){ const tb=document.createElement("i"); tb.className="tripband"; b.append(tb); }
-    const list=byDate[ds]||[]; let lbl=(clDates.has(ds)?"travel expenses, ":"")+DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"")+(isVac?", vacation":"")+(bbH?", black book day off "+hrs(bbH)+" hours":"")+(actA?", acting "+actA.rank:"");
+    const list=byDate[ds]||[]; let lbl=(clDates.has(ds)?"travel expenses, ":"")+DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"&&!hol?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"")+(isVac?", vacation":"")+(bbH?", black book day off "+hrs(bbH)+" hours":"")+(actA?", acting "+actA.rank:"")+(hol?", stat holiday, "+hol.name+(hol.movedFrom?" (moved from "+nice(hol.movedFrom)+")":""):"");
     if(list.length){const tot=list.reduce((t,e)=>t+paidHours(e),0), allOk=list.every(e=>e.confirmed);
       const c=document.createElement("span"); c.className="eh"+(allOk?" ok":""); c.textContent=hm(tot); b.append(c);
       lbl+=", "+hrs(tot)+" hours logged"+(allOk?", confirmed":"");}
@@ -2114,9 +2168,10 @@ async function vacDelete(e){ delete entries[e.id]; render();
 function vacRowAuto(r){
   const a=r.querySelector(".vfrom").value, b=r.querySelector(".vto").value||a, hi=r.querySelector(".vhrs"), sm=r.querySelector(".vrsum");
   if(!a){ sm.textContent=""; return; }
-  const n=vacDays({date:a,endDate:b<a?a:b}).length;
-  sm.textContent=n?n+" work day"+(n===1?"":"s"):"No work days";
-  if(!hi.dataset.touched) hi.value=n?Math.round(n*shiftHrs()*100)/100:"";
+  const ds=vacDays({date:a,endDate:b<a?a:b}), n=ds.length, sh=shiftHrs(), st=ds.filter(d=>dphOn(d,settings.sched||DEFAULTS.sched));
+  const h=ds.reduce((t,d)=>t+(st.includes(d)?Math.max(0,sh-8):sh),0);
+  sm.textContent=n?n+" work day"+(n===1?"":"s")+(st.length?" (incl. "+st.length+" stat: only "+hrs(Math.max(0,sh-8))+" hrs vacation, 23.04)":""):"No work days";
+  if(!hi.dataset.touched) hi.value=n?Math.round(h*100)/100:"";
 }
 function vacRenumber(){ const rs=[...$("vacRows").children]; rs.forEach((r,i)=>{ r.querySelector(".vrt").textContent=rs.length>1?"Vacation date "+(i+1):"Vacation date"; r.querySelector(".vrx").hidden=rs.length<2; }); }
 function addVacRow(v){
@@ -2204,7 +2259,19 @@ const actBase=a=>actBaseAnnual(a)/2087.04;
 const actDiff=a=>Math.max(0,(Number(a.annual)-actBaseAnnual(a))/2087.04);
 const m3=x=>"$"+x.toFixed(3);   /* per-hour rates to 3 decimals so the math adds up */
 const actEnd=a=>a.endDate||today();
-const isLeaveDay=ds=>vacOn(ds).length>0||ltoUses().some(u=>u.date===ds);
+/* 23.06(a): a stat on a leave day counts as a holiday, not leave */
+const isLeaveDay=ds=>!dphOn(ds,settings.sched||DEFAULTS.sched)&&(vacOn(ds).length>0||ltoUses().some(u=>u.date===ds));
+/* used by the on-call calculation: no shift to subtract on a day you're on leave */
+function offDutyDay(ds){ return vacOn(ds).length>0||ltoUses().some(u=>u.date===ds); }
+/* On call split by the paid acting period(s): counted hours inside them get the acting rate (31.03). */
+function actOcSplit(e){
+  if(!e||e.type!=="oncall"||!e.ocStart||typeof actEntries!=="function") return null;
+  const tot=ocParts(e,CALC_ALL).counted; if(!tot) return null; let act=0, extra=0, rate=0;
+  for(const a of actEntries()){ const D=actDays(a); if(!D.from) continue; const r=actHr(a); if(!(r>(Number(e.rate)||0))) continue;
+    const lo=toMs(D.from+"T00:00"), hi=a.endDate?toMs(addDaysStr(a.endDate,1)+"T00:00"):null, c=ocParts(e,CALC_ALL,lo,hi).counted;
+    if(c>0){ act+=c; extra+=c*(r-e.rate); rate=r; } }
+  return act>0?{tot,act,rate,blended:e.rate+extra/tot}:null;
+}
 let ACT_CACHE=null;
 /* Scheduled workdays in an acting period. You qualify after 2 scheduled workdays acting (31.06(a)); once you do, acting pay
    runs from the first day you acted (31.01), qualifying days included. Leave during the qualifying period doesn't count toward it
@@ -2223,6 +2290,7 @@ function actDays(a){
 /* Overtime, callbacks, court and on call in a paid acting period use the acting rate (31.03, 31.04). */
 function actingRateFor(e){
   if(!e||!e.date||e.type==="claim"||e.type==="vac"||e.type==="acting"||e.type==="ltouse"||e.type==="actline") return 0;
+  if(e.type==="oncall"&&e.ocStart){ const S=actOcSplit(e); return S?S.blended:0; }
   for(const a of actEntries()){ const D=actDays(a); if(D.from&&e.date>=D.from&&e.date<=(a.endDate||"9999-12-31")){ const r=actHr(a); return r>(Number(e.rate)||0)?r:0; } }
   return 0;
 }
@@ -2232,7 +2300,7 @@ function actLines(){
   for(const a of actEntries()){ const D=actDays(a), g={};
     for(const ds of D.paid){ const pp=payPeriod(ds,settings.payStart); (g[pp.start]=g[pp.start]||{pp,days:[]}).days.push(ds); }
     for(const [k,v] of Object.entries(g)){ const c=(a.pp||{})[k]||{}, hrs=v.days.length*sh, amt=Math.round(hrs*actDiff(a)*100)/100;
-      out.push({id:a.id+"|"+k,type:"actline",comp:"cash",act:a,ppStart:k,ppEnd:v.pp.end,date:v.pp.end,created:0,days:v.days,leaveDays:v.days.filter(isLeaveDay),hrs,amt,
+      out.push({id:a.id+"|"+k,type:"actline",comp:"cash",act:a,ppStart:k,ppEnd:v.pp.end,date:v.pp.end,created:0,days:v.days,leaveDays:v.days.filter(isLeaveDay),statDays:v.days.filter(d=>dphOn(d,settings.sched||DEFAULTS.sched)),hrs,amt,
         confirmed:!!c.stubDate,stubDate:c.stubDate||null,paid:c.paid!=null?c.paid:null}); } }
   return out.sort((x,y)=>x.ppStart.localeCompare(y.ppStart));
 }
@@ -2256,6 +2324,7 @@ function actLineEl(l){
   li.append(chk,main,r);
   const mb=document.createElement("div"); mb.className="mathbox isact";
   for(const ln of [l.days.length+" scheduled day"+(l.days.length===1?"":"s")+" × "+hrs(shiftHrs())+" hrs = "+hrs(l.hrs)+" hrs"+(l.leaveDays.length?" (incl. "+l.leaveDays.length+" on leave, 31.03)":""),
+                   ...l.statDays.map(d=>"Stat "+nice(d)+": 8 hrs holiday pay + "+hrs(Math.max(0,shiftHrs()-8))+" hrs worked or leave (31.03, 23.04)"),
                    hrs(l.hrs)+" hrs × "+m3(actDiff(a))+" ("+m3(actHr(a))+" acting − "+m3(actBase(a))+") = "+money(l.amt)]){
     const d=document.createElement("div"); d.className="ocmath"; d.textContent=ln; mb.append(d); }
   li.append(mb); return li;
