@@ -19,7 +19,7 @@
 :root{
   --bg:#eef1f4; --surface:#ffffff; --ink:#1b2430; --muted:#5d6b7a; --line:#d5dbe2;
   --accent:#e0601b; --accent-ink:#ffffff; --accent-soft:#fbe6da;
-  --ok:#2f7d4f; --ok-soft:#dcefe3; --bad:#b02a4a; --oc:#1f6fd1; --oc-ink:#ffffff; --otc:#c62828; --cl:#7b3fbf; --vac:#0e8f9c; --bb:#c2257a; --work:#2e8b57; --work-soft:#dff2e6; --work-ink:#ffffff;
+  --ok:#2f7d4f; --ok-soft:#dcefe3; --bad:#b02a4a; --oc:#1f6fd1; --oc-ink:#ffffff; --otc:#c62828; --cl:#7b3fbf; --vac:#0e8f9c; --bb:#c2257a; --act:#4f46e5; --work:#2e8b57; --work-soft:#dff2e6; --work-ink:#ffffff;
   --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -27,11 +27,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#12171d; --surface:#1b222b; --ink:#e7ecf1; --muted:#97a4b2; --line:#2e3844;
   --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2418;
-  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --vac:#33c6cf; --bb:#ff6fb5; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}}
+  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --vac:#33c6cf; --bb:#ff6fb5; --act:#8f8cff; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#12171d; --surface:#1b222b; --ink:#e7ecf1; --muted:#97a4b2; --line:#2e3844;
   --accent:#ff7a33; --accent-ink:#1a0d05; --accent-soft:#3a2418;
-  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --vac:#33c6cf; --bb:#ff6fb5; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}
+  --ok:#5cbf85; --ok-soft:#1d3327; --bad:#ef6a8a; --oc:#4c8fe6; --oc-ink:#ffffff; --otc:#e5484d; --cl:#b48cf0; --vac:#33c6cf; --bb:#ff6fb5; --act:#8f8cff; --work:#4fbf7f; --work-soft:#1c3427; --work-ink:#0f1f16; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45}
@@ -156,6 +156,19 @@ details.settings>summary{cursor:pointer;padding:14px 16px;font-family:var(--f-di
 .sw.bbsw{background:repeating-linear-gradient(135deg,var(--bb) 0 3px,color-mix(in srgb,var(--bb) 45%,var(--surface)) 3px 6px)}
 .tag.bbt{border-color:var(--bb);color:var(--bb)}
 .pbar .seg.bb{background:#ff6fb5}
+.day .actband{position:absolute;left:0;right:0;top:0;height:5px;background:var(--act);z-index:3;pointer-events:none}
+.tag.actt{border-color:var(--act);color:var(--act)}
+.mathbox.isact{border-left-color:var(--act)}
+.wsec.wact .ptitle::before{background:var(--act)}
+.actper{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px dashed var(--line)}
+.actper .vtxt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.actper small{color:var(--muted)}
+.actper button{min-height:32px;padding:2px 12px;font-size:.85rem;flex:none}
+#actSum{display:block;margin:4px 0 0;font-family:var(--f-mono);font-size:.8rem;font-weight:600;text-transform:none;letter-spacing:0;color:var(--act)}
+#actBox>summary{position:relative;padding-right:44px}
+#actBox>summary::after{position:absolute;right:16px;top:14px;float:none}
+.actinfo{border-color:var(--act);background:color-mix(in srgb,var(--act) 6%,var(--surface))}
+.actinfo>summary{color:var(--act)}.actinfo .ib{border-color:var(--act)}
 .day .vacfill{position:absolute;inset:0;background:var(--vac);z-index:0;pointer-events:none}
 .day.vacd .dn,.day.vacd .rt{background:var(--surface);color:var(--ink);border-radius:4px;padding:0 4px;line-height:1.25}
 .vacbody{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
@@ -283,6 +296,7 @@ li.entry.tap:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .wtab tr>th:first-child{white-space:nowrap}
 .wtab tr.ot>th:first-child::before,.wtab tr.oc>th:first-child::before,.wtab tr.cl>th:first-child::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:1px;background:var(--otc)}
 .wtab tr.oc>th:first-child::before{background:var(--oc)}
+.wtab tr.ac>th:first-child::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:1px;background:var(--act)}
 .wtab tr.cl>th:first-child::before{background:#c4a1ff}
 .wtab tr.pt>*,.wtab tr.tt>*{border-top:1px solid var(--hero-line,var(--line));padding-top:6px;font-weight:800}
 .wtab tr.tt>th{font-size:.95rem}
@@ -302,7 +316,7 @@ li.entry.tap:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .dtpair{display:grid;grid-template-columns:1.25fr 1fr;gap:8px}
 .ocbox .field>.label{font-size:.72rem}
 .usebtn{border:0;background:none;padding:0;min-height:0;color:var(--gold,#f2b84b);font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:.8rem}
-#vacClose,#ltoClose{min-width:44px;min-height:44px;font-size:1.1rem;border-radius:50%}
+#vacClose,#ltoClose,.xbtn{min-width:44px;min-height:44px;font-size:1.1rem;border-radius:50%}
 .lhist{display:flex;flex-direction:column;gap:6px}
 .lrow{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.9rem;padding:6px 0;border-top:1px dashed var(--line)}
 .lrow button{min-height:30px;padding:2px 10px;font-size:.8rem}
@@ -509,7 +523,7 @@ details.settings[open]>summary::after{content:"－"}
         <div class="cal" aria-label="Calendar">
           <div class="calhead"><button type="button" id="calPrev" aria-label="Previous month">‹</button><strong id="calTitle">—</strong><button type="button" id="calNext" aria-label="Next month">›</button></div>
           <div class="calgrid" id="calGrid"></div>
-          <div class="callegend"><span><i class="sw" style="background:var(--accent-soft);border:1px solid var(--accent)"></i>RTO, paid 2×</span><span><i class="sw" style="background:var(--ink)"></i>Pay period starts</span><span><i class="sw" style="background:var(--work)"></i>Your shift</span><span><i class="sw" style="background:var(--otc)"></i>Overtime</span><span><i class="sw" style="background:var(--oc)"></i>On call</span><span><i class="sw" style="background:var(--vac)"></i>Vacation</span><span><i class="sw bbsw"></i>Black book day</span><span><b style="color:var(--cl);font-size:.8rem">$</b> Travel expenses</span><span><i class="sw" style="background:var(--accent)"></i>Waiting (hrs)</span><span><i class="sw" style="background:var(--ok)"></i>Confirmed</span></div>
+          <div class="callegend"><span><i class="sw" style="background:var(--accent-soft);border:1px solid var(--accent)"></i>RTO, paid 2×</span><span><i class="sw" style="background:var(--ink)"></i>Pay period starts</span><span><i class="sw" style="background:var(--work)"></i>Your shift</span><span><i class="sw" style="background:var(--otc)"></i>Overtime</span><span><i class="sw" style="background:var(--oc)"></i>On call</span><span><i class="sw" style="background:var(--vac)"></i>Vacation</span><span><i class="sw bbsw"></i>Black book day</span><span><i class="sw" style="background:var(--act);height:4px;align-self:flex-start;margin-top:5px"></i>Acting</span><span><b style="color:var(--cl);font-size:.8rem">$</b> Travel expenses</span><span><i class="sw" style="background:var(--accent)"></i>Waiting (hrs)</span><span><i class="sw" style="background:var(--ok)"></i>Confirmed</span></div>
         </div>    </div>
     <div class="calfoot"><button type="button" class="btn-primary" id="logToday">Log time for today</button></div>
   </section>
@@ -518,7 +532,7 @@ details.settings[open]>summary::after{content:"－"}
     <div class="sheethead"><div><h2 id="formTitle">Add overtime</h2><div id="sheetDate" class="sheetdate"></div></div><button type="button" id="sheetClose" aria-label="Close">✕</button></div>
     <form class="add" id="otForm" novalidate>
       <div class="field full"><label for="fType">Type</label>
-        <select id="fType"><option value="ot">Overtime</option><option value="callback">Callback (3 hr minimum)</option><option value="callhome">Callback worked at home (1 hr minimum)</option><option value="court">Court while off duty (4 hr minimum)</option><option value="oncall">On call (OA)</option><option value="claim">Travel expenses</option><option value="vac">Vacation</option></select></div>
+        <select id="fType"><option value="ot">Overtime</option><option value="callback">Callback (3 hr minimum)</option><option value="callhome">Callback worked at home (1 hr minimum)</option><option value="court">Court while off duty (4 hr minimum)</option><option value="oncall">On call (OA)</option><option value="claim">Travel expenses</option><option value="vac">Vacation</option><option value="acting">Acting pay</option></select></div>
       <input type="hidden" id="fDate">
       <div class="dayhas" id="dayHas" hidden></div>
       <button type="button" class="btn-primary addmore" id="addMore" hidden>+ Log more time on this day</button>
@@ -617,6 +631,36 @@ details.settings[open]>summary::after{content:"－"}
       <p class="hint">Hours fill in from your work days in each range (10 hrs a day). Change them for a partial day. For single days, leave the last day the same as the first.</p>
       <p class="formerr" id="vacErr" hidden></p>
       <div class="actions"><button type="button" class="btn-primary" id="vacSave">Log vacation</button><button type="button" id="vacCancel">Cancel</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="actDlg" class="sheet confdlg" aria-labelledby="actTitle">
+    <div class="sheethead"><div><h2 id="actTitle">Add acting period</h2><div class="sheetdate">Article 31</div></div><button type="button" id="actClose" class="xbtn" aria-label="Close">✕</button></div>
+    <div class="confbody">
+      <div class="vgrid">
+        <div class="field"><label for="actRank">Acting rank</label><select id="actRank"></select></div>
+        <div class="field"><label for="actAnnual">Annual rate</label><input type="number" id="actAnnual" inputmode="numeric" min="0" step="1"></div>
+        <div class="field"><label for="actFrom">First day</label><input type="date" id="actFrom"></div>
+        <div class="field"><label for="actTo">Last day</label><input type="date" id="actTo"></div>
+      </div>
+      <p class="hint">Leave the last day empty while you're still acting.</p>
+      <label class="ckline"><input type="checkbox" id="actSkipQual">Qualifying period already done (continuing an earlier acting assignment)</label>
+      <div class="field"><label for="actNote">Note</label><input type="text" id="actNote" maxlength="120" placeholder="optional, e.g. covering S/Sgt Smith"></div>
+      <p class="preview" id="actPrev" aria-live="polite"></p>
+      <p class="formerr" id="actErr" hidden></p>
+      <div class="actions"><button type="button" class="btn-primary" id="actSave">Save</button><button type="button" id="actCancel">Cancel</button><button type="button" class="danger" id="actDel" hidden>Delete</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="actConfDlg" class="sheet confdlg" aria-labelledby="actConfTitle">
+    <div class="sheethead"><div><h2 id="actConfTitle">Confirm acting pay?</h2><div id="actConfWhat" class="sheetdate"></div></div><button type="button" id="actConfClose" class="xbtn" aria-label="Close">✕</button></div>
+    <div class="confbody">
+      <p id="actConfMsg" class="small"></p>
+      <div class="confgrid" id="actConfFields">
+        <div class="field"><label for="actConfStub">Pay stub date</label><input type="date" id="actConfStub"></div>
+        <div class="field"><label for="actConfPaid">Amount on stub (optional)</label><input type="text" id="actConfPaid" inputmode="decimal"></div>
+      </div>
+      <div class="actions"><button type="button" class="btn-primary" id="actConfYes">Confirm</button><button type="button" id="actConfCancel">Cancel</button></div>
     </div>
   </dialog>
 
@@ -743,6 +787,24 @@ details.settings[open]>summary::after{content:"－"}
       </div>
       <button type="button" class="btn-primary" id="vacAdd">+ Log vacation</button>
       <div id="vacList"></div>
+    </div>
+  </details>
+
+  <details class="card settings" id="actBox">
+    <summary>Acting Pay<span id="actSum"></span></summary>
+    <div class="vacbody">
+      <p class="hint">Acting in a higher rank pays the difference for every scheduled hour once the 2-day qualifying period is done (Article 31). Each pay period becomes one line to tick off against the Acting pay line on your stub.</p>
+      <button type="button" class="btn-primary actbtn" id="actAdd">+ Add acting period</button>
+      <div id="actList"></div>
+      <details class="njcinfo actinfo"><summary><span class="ib" aria-hidden="true">i</span> How acting pay works (Article 31)</summary>
+        <div class="njcbody">
+          <p><b>Qualifying period (31.06(a)):</b> 2 consecutive scheduled workdays in detachment and operational units. No acting pay for those 2 days.</p>
+          <p><b>Leave during qualifying (31.07, 31.08):</b> doesn't count toward the 2 days and isn't paid; you finish the qualifying days when you're back.</p>
+          <p><b>After qualifying (31.03):</b> acting pay for all scheduled hours, including leave, LTO, and 8 hrs of a designated paid holiday you don't work.</p>
+          <p><b>Extra hours (31.03, 31.04):</b> overtime, callbacks and on call after the qualifying period are paid at the acting rate. The app does this automatically.</p>
+          <p><b>Not paid (31.05):</b> for example sick leave from the 31st consecutive day, leave without pay, or suspension over 20 workdays.</p>
+          <p class="small">Rates are Appendix A (April 1, 2024 market adjustment). Stat holidays aren't on the app's calendar, so check those against your stub. Over 30 days, management enters the acting appointment in HRMIS (31.02).</p>
+        </div></details>
     </div>
   </details>
 
@@ -914,7 +976,9 @@ function paidHours(e,all){
 }
 /* 25.02: paid for each COMPLETED 15 minutes. */
 function floor15(h){return Math.floor(h*4+1e-9)/4;}
-function expected(e){return Math.round(paidHours(e)*e.mult*e.rate*100)/100;}
+/* Rate for an entry: the acting rate when it falls in a paid acting period (31.03/31.04), otherwise the rate saved with it. */
+function rateOf(e){ const a=(typeof actingRateFor==="function")?actingRateFor(e):0; return a||e.rate; }
+function expected(e){return Math.round(paidHours(e)*e.mult*rateOf(e)*100)/100;}
 function ltoCredit(e){return paidHours(e)*e.mult;}
 function spanHours(start,end){
   if(!start||!end)return null;
@@ -961,16 +1025,16 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.20.0";
+const APP_VERSION="2.21.0";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.21.0",date:"2026-11-21",kind:"minor",notes:[
+    "Acting pay (Article 31): add acting periods with the rank and dates. The app skips the 2-day qualifying period, works out the extra pay for each pay period to confirm against your stub, and pays overtime at the acting rate.",
+    "Acting pay shows in the Waiting and YTD totals, the Waiting tab, and as a band on the calendar."]},
   {v:"2.20.0",date:"2026-11-09",kind:"minor",notes:[
     "The Overtime LTO, OA LTO and Black book bank bars moved from the top into the Vacation section, now called Vacation & Banked Hours."]},
   {v:"2.19.1",date:"2026-11-09",kind:"patch",notes:[
-    "Black book has its own pink colour on the calendar, bank bar and tags, so it doesn't look like waiting (gold) or days off (tan)."]},
-  {v:"2.19.0",date:"2026-11-09",kind:"minor",notes:[
-    "Black book bank: log overtime as Black book (not paid, not in the LTO banks). The hours go into a black book bank you use by picking a day off; those days show striped on the calendar.",
-    "Travel expenses has an info button with the NJC rules for when meals and incidentals can be claimed, and a warning if incidentals are ticked on a single-day claim."]}
+    "Black book has its own pink colour on the calendar, bank bar and tags, so it doesn't look like waiting (gold) or days off (tan)."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -1061,7 +1125,7 @@ function otMathLines(e){
   const ph=paidHours(e), lto=e.comp==="lto", res=isBB(e)?hxU(ph*e.mult)+" to black book":lto?hxU(ph*e.mult)+" banked":money(expected(e));
   if(e.segs&&e.segs.length>1) return [ e.segs.map(s=>hm(s.h)+" at "+multTxt(s.mult)).join(" + "), e.segs.map(s=>stubH(s.h)+" at "+multTxt(s.mult)).join(" + ")+" = "+res ];
   const l1=hm(e.hours)+" worked"+(ph!==e.hours?" → "+hm(ph)+(ph>e.hours?" (minimum)":" (15-min blocks)"):"");
-  return [ l1, stubH(ph)+" at "+multTxt(e.mult)+" = "+res ];
+  const ar=actingRateFor(e); return [ l1, stubH(ph)+" at "+multTxt(e.mult)+(ar&&!isBB(e)&&e.comp!=="lto"?" × acting "+money(ar):"")+" = "+res ];
 }
 function mathBox(e,all){
   const oc=e.type==="oncall", cl=e.type==="claim", box=document.createElement("div"); box.className="mathbox "+(oc?"isoc":cl?"iscl":isBB(e)?"isbb":"isot");
@@ -1120,7 +1184,7 @@ const nEntries=n=>n+" "+(n===1?"entry":"entries");
 const comp=()=>document.querySelector('input[name="comp"]:checked').value;
 
 /* Lieu time used ("ltouse") records live with the entries (so backups include them) but never count as work. */
-const workEntries=()=>Object.values(entries).filter(e=>e.type!=="ltouse"&&e.type!=="claim"&&e.type!=="vac");
+const workEntries=()=>Object.values(entries).filter(e=>e.type!=="ltouse"&&e.type!=="claim"&&e.type!=="vac"&&e.type!=="acting");
 const vacEntries=()=>Object.values(entries).filter(e=>e.type==="vac");
 const claimEntries=()=>Object.values(entries).filter(e=>e.type==="claim");
 /* Black book: overtime taken as time off on a day you pick, not paid and not in the LTO banks. */
@@ -1146,13 +1210,13 @@ function bankBalance(all,kind){
   return {start,earned,used};
 }
 /* ---------- take-home estimate ---------- */
-const grossOf=x=>x.confirmed&&x.paid!=null?x.paid:expected(x);
+const grossOf=x=>x.type==="actline"?(x.confirmed&&x.paid!=null?x.paid:x.amt):x.confirmed&&x.paid!=null?x.paid:expected(x);
 const orderKey=x=>x.date+"|"+String(Math.min(x.created||0,9e15)).padStart(16,"0");
 function netInfo(e){
   if(e.type==="claim") return null;   /* reimbursements: no tax estimate */
   if(e.comp==="lto"||isBB(e)||!e.date) return null;
   const y=e.date.slice(0,4), k=orderKey(e); let prior=0;
-  for(const x of workEntries()){ if(x.id===e.id||!isCash(x)||!x.date||x.date.slice(0,4)!==y) continue; if(orderKey(x)<k) prior+=grossOf(x); }
+  for(const x of [...workEntries(),...actLines()]){ if(x.id===e.id||!isCash(x)||!x.date||x.date.slice(0,4)!==y) continue; if(orderKey(x)<k) prior+=grossOf(x); }
   const doy=(toMs(e.date+"T00:00")-toMs(y+"-01-01T00:00"))/86400000+1;
   const sal=settings.salary??DEFAULTS.salary, base=settings.taxBase??DEFAULTS.taxBase;
   return deductions(grossOf(e),base+prior,sal*doy/365+prior,{cpp:settings.payCpp??DEFAULTS.payCpp,ei:settings.payEi??DEFAULTS.payEi});
@@ -1160,7 +1224,7 @@ function netInfo(e){
 function netText(n){ if(!n) return ""; const parts=["federal tax "+money(n.fed),"BC tax "+money(n.bc)]; if(n.cpp) parts.push("CPP "+money(n.cpp)); if(n.ei) parts.push("EI "+money(n.ei)); return "Take-home ≈ "+money(n.net)+" ("+parts.join(", ")+")"; }
 const sumNet=list=>list.reduce((t,x)=>{const n=netInfo(x);return t+(n?n.net:0);},0);
 function render(){
-  renderRateWarn(); renderVac();
+  ACT_CACHE=null; renderRateWarn(); renderVac(); renderAct();
   renderCal();
   const cp=payPeriod(today(),settings.payStart);
   $("rateLine").textContent="Hourly rate "+money(settings.rate)+" · Pay period "+ppNo(cp.start)+" ("+shortD(cp.start)+" – "+shortD(cp.end)+")";
@@ -1174,6 +1238,9 @@ function render(){
     const col=(ot,oc,cl)=>{ const p=sum(cash(ot))+sum(cash(oc)), pn=sumNet(cash([...ot,...oc])), c=sum(cl);
       return {ot:sum(cash(ot)),oc:sum(cash(oc)),otN:ot.length,ocN:oc.length,clN:cl.length,pay:p,payNet:pn,cl:c,tot:p+c,totNet:pn+c,lto:ltoOf([...ot,...oc]),n:ot.length+oc.length+cl.length}; };
     const A=col(W.ot,W.oc,W.cl), C=col(done.filter(e=>e.type!=="oncall"),done.filter(e=>e.type==="oncall"),claimEntries().filter(e=>e.confirmed&&inYr(e)));
+    /* acting pay lines join the pay total (taxable) */
+    { const aw=actWaiting(), ac=actLines().filter(l=>l.confirmed&&inYr(l)), add=(X,l)=>{ const v=l.reduce((q,x)=>q+actAmt(x),0), n=sumNet(l); X.act=v; X.pay+=v; X.payNet+=n; X.tot+=v; X.totNet+=n; X.n+=l.length; };
+      add(A,aw); add(C,ac); }
     $("wAmt").textContent=money(A.tot); $("wNet").textContent=A.tot?"≈ "+money(A.totNet)+" take-home":"";
     $("wHrs").textContent=nEntries(A.n)+(A.lto?" · +"+hx(A.lto)+" hrs LTO":"");
     $("cAmt").textContent=money(C.tot); $("cNet").textContent=C.tot?"≈ "+money(C.totNet)+" take-home":"";
@@ -1185,6 +1252,7 @@ function render(){
       for(const v of [a,c]){ const d=r.insertCell(); d.className="num"; d.textContent=v; } if(sub) r.classList.add("sub"); };
     row("Overtime","ot",money(A.ot),money(C.ot));
     row("On call","oc",money(A.oc),money(C.oc));
+    if(A.act||C.act||actEntries().length) row("Acting pay","ac",money(A.act),money(C.act));
     row("Pay total","pt",money(A.pay),money(C.pay));
     row("≈ after tax","",money(A.payNet),money(C.payNet),true);
     row("Expenses","cl",money(A.cl),money(C.cl));
@@ -1252,6 +1320,12 @@ function render(){
     L.append(section("Overtime waiting",otList,"No overtime waiting. Overtime, callbacks and court stay here until you confirm them on a pay stub.","wot"));
     L.append(section("On call waiting",ocList,"No on-call time waiting. On-call periods appear here once they start.","woc"));
     L.append(section("Travel expenses waiting",W.cl,"No travel expenses waiting.","wcl"));
+    { const aw=actWaiting(); if(aw.length||actEntries().length){ const card=document.createElement("div"); card.className="pcard wsec wact";
+        const h=document.createElement("div"); h.className="phead"; const t=document.createElement("div"); t.className="ptitle"; t.textContent="Acting pay waiting";
+        const sm=document.createElement("div"); sm.className="num psum"; const n=sumNet(aw); sm.textContent=aw.length+" pay period"+(aw.length===1?"":"s")+" · "+money(aw.reduce((q,l)=>q+l.amt,0))+(n?" (≈ "+money(n)+" take-home)":""); h.append(t,sm); card.append(h);
+        if(!aw.length){ const em=document.createElement("div"); em.className="empty"; em.textContent="No acting pay waiting."; card.append(em); }
+        else { const ul=document.createElement("ul"); ul.className="list"; aw.forEach(l=>ul.append(actLineEl(l))); card.append(ul); }
+        L.append(card); } }
     { const B=bankBalance(workEntries(),"bb"), left=B.earned-B.used;
       if(B.earned||B.used){ const card=document.createElement("div"); card.className="pcard wsec wbb";
         const h=document.createElement("div"); h.className="phead"; const t=document.createElement("div"); t.className="ptitle"; t.textContent="Black book hours to use";
@@ -1289,6 +1363,11 @@ function render(){
       const t=document.createElement("div"); t.className="ptitle"; t.textContent=filter==="done"?"Travel expenses confirmed":"Travel expenses";
       const sm=document.createElement("div"); sm.className="num psum"; sm.textContent=nEntries(cls.length)+" · "+money(cls.reduce((q,x)=>q+amountOf(x),0));
       h.append(t,sm); card.append(h); const ul=document.createElement("ul"); ul.className="list"; cls.forEach(e=>ul.append(buildEntry(e,all))); card.append(ul); C.append(card); } }
+  { const C=$("clList"), ls=actLines().filter(l=>filter==="all"||(filter==="done")===l.confirmed).sort((a,b)=>b.ppStart.localeCompare(a.ppStart));
+    if(filter!=="wait"&&ls.length){ const card=document.createElement("div"); card.className="pcard wsec wact"; const h=document.createElement("div"); h.className="phead";
+      const t=document.createElement("div"); t.className="ptitle"; t.textContent=filter==="done"?"Acting pay confirmed":"Acting pay";
+      const sm=document.createElement("div"); sm.className="num psum"; sm.textContent=ls.length+" pay period"+(ls.length===1?"":"s")+" · "+money(ls.reduce((q,l)=>q+actAmt(l),0));
+      h.append(t,sm); card.append(h); const ul=document.createElement("ul"); ul.className="list"; ls.forEach(l=>ul.append(actLineEl(l))); card.append(ul); C.append(card); } }
   const target=L.querySelector('.pcard[data-key="'+activeKey+'"]');
   if(target) L.scrollLeft=target.offsetLeft-L.offsetLeft;
   updatePnav();
@@ -1455,7 +1534,7 @@ function startEdit(id){
 }
 ["fStart","fEnd"].forEach(id=>$(id).addEventListener("change",syncHours));
 $("fHours").addEventListener("input",()=>{ $("fHours").dataset.typed="1"; updatePreview(); });
-$("fType").addEventListener("change",ev=>{ if($("fType").value!=="vac") return; ev.stopImmediatePropagation(); const ds=$("fDate").value||today(); $("fType").value="ot"; closeSheet(); openVac(null,ds); });
+$("fType").addEventListener("change",ev=>{ const ty=$("fType").value; if(ty!=="vac"&&ty!=="acting") return; ev.stopImmediatePropagation(); const ds=sheetDay||$("fDate").value||today(); $("fType").value="ot"; closeSheet(); if(ty==="vac") openVac(null,ds); else openAct(null,ds); });
 /* Switching type only works hours out from times you actually picked; the default times (and on call's window) never fill in hours. */
 $("fType").addEventListener("change",()=>{ const ty=$("fType").value; if(ty==="oncall"||ty==="claim") return;
   if(timesUsed("fStart","fEnd")) syncHours(); else if(!$("fHours").dataset.typed) $("fHours").value=""; });
@@ -1697,7 +1776,8 @@ function renderCal(){
     const d0=toMs(ds+"T00:00"), d1=d0+86400000, ocFrac=coverFrac(ocWins,d0,d1), isOc=ocFrac>0;
     b.className="day "+kind+(ds===sel?" sel":"")+(ds===td?" today":"")+(ps?" pstart":"")+(isOc?" oc":"");
     const isVac=vacDates.has(ds);
-    const bbH=bbDays[ds]||0;
+    const bbH=bbDays[ds]||0, actA=actEntries().find(a=>ds>=a.date&&ds<=actEnd(a)&&!(a.endDate==null&&ds>today()));
+    if(actA){ const ab=document.createElement("i"); ab.className="actband"; b.append(ab); }
     if(isVac){ b.classList.add("vacd"); const vf=document.createElement("i"); vf.className="vacfill"; b.append(vf); }
     else if(bbH){ b.classList.add("vacd","bbd"); const vf=document.createElement("i"); vf.className="vacfill bbfill"; b.append(vf); }
     else if(kind==="work"){ const sh=settings.shift||DEFAULTS.shift, sb=document.createElement("i"); sb.className="shiftband"; sb.style.left=(mins(sh.start)/14.4)+"%"; sb.style.width=((mins(sh.end)-mins(sh.start))/14.4)+"%"; b.append(sb); if(mins(sh.start)<=605&&mins(sh.end)>=835) b.classList.add("shiftmid"); }
@@ -1710,7 +1790,7 @@ function renderCal(){
     if(kind!=="work"){const r=document.createElement("span"); r.className="rt"; r.textContent=kind==="rto"?"2×":"TOW"; b.append(r);}
     if(clDates.has(ds)){ const cm=document.createElement("span"); cm.className="clmark"; cm.textContent="$"; b.append(cm); }
     if(tripDates.has(ds)){ const tb=document.createElement("i"); tb.className="tripband"; b.append(tb); }
-    const list=byDate[ds]||[]; let lbl=(clDates.has(ds)?"travel expenses, ":"")+DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"")+(isVac?", vacation":"")+(bbH?", black book day off "+hrs(bbH)+" hours":"");
+    const list=byDate[ds]||[]; let lbl=(clDates.has(ds)?"travel expenses, ":"")+DAYNAME[dow]+" "+MON[m-1]+" "+d+(kind==="rto"?", regular time off":kind==="tow"?", time off work":"")+(ps?", pay period "+ppNo(ds)+" starts":"")+(kind==="work"?", shift "+clock((settings.shift||DEFAULTS.shift).start)+" to "+clock((settings.shift||DEFAULTS.shift).end):"")+(isOc?", on call "+hrs(ocFrac*24)+" of 24 hours":"")+(isVac?", vacation":"")+(bbH?", black book day off "+hrs(bbH)+" hours":"")+(actA?", acting "+actA.rank:"");
     if(list.length){const tot=list.reduce((t,e)=>t+paidHours(e),0), allOk=list.every(e=>e.confirmed);
       const c=document.createElement("span"); c.className="eh"+(allOk?" ok":""); c.textContent=hm(tot); b.append(c);
       lbl+=", "+hrs(tot)+" hours logged"+(allOk?", confirmed":"");}
@@ -2112,6 +2192,148 @@ async function vacStartChanged(){
 $("vacLeft").addEventListener("change",vacStartChanged); $("vacAsOf").addEventListener("change",vacStartChanged);
 $("vacClear").onclick=async()=>{ const o={...(settings.vacStart||{})}; delete o[vacFy]; settings={...settings,vacStart:o}; render();
   $("vacStartHint").textContent="Cleared. The year starts at "+hrs(vacAllot(vacFy))+" hrs again."; await saveVacSettings("Vacation balance cleared"); };
+/* ---------- acting pay (Article 31) ---------- */
+/* Appendix A annual rates, April 1, 2024 market adjustment. */
+const ACT_RANKS=[["Cpl. step 1",121691],["Cpl. step 2",126311],["Sgt. step 1",133677],["Sgt. step 2",137677],["S/Sgt. step 1",146019],["S/Sgt. step 2",150073],["S/S/M., S/M, C/S/M",150524]];
+const actEntries=()=>Object.values(entries).filter(e=>e.type==="acting");
+/* Hourly rates are annual ÷ 2,087.04. The difference is worked from the two annual rates so it isn't thrown off by rounding (S/Sgt. 1 vs Sgt. 2: $3.997/hr). */
+const actHr=a=>(Number(a.annual)||0)/2087.04;
+const actBaseAnnual=a=>Number(a.baseAnnual)||(Number(a.baseRate)?Number(a.baseRate)*2087.04:Number(settings.salary??DEFAULTS.salary));
+const actBase=a=>actBaseAnnual(a)/2087.04;
+const actDiff=a=>Math.max(0,(Number(a.annual)-actBaseAnnual(a))/2087.04);
+const m3=x=>"$"+x.toFixed(3);   /* per-hour rates to 3 decimals so the math adds up */
+const actEnd=a=>a.endDate||today();
+const isLeaveDay=ds=>vacOn(ds).length>0||ltoUses().some(u=>u.date===ds);
+let ACT_CACHE=null;
+/* Scheduled workdays in an acting period: the first 2 worked are the qualifying period (31.06(a), no acting pay);
+   leave during it doesn't count or pay (31.07/31.08); after it, every scheduled workday pays, leave included (31.03). */
+function actDays(a){
+  ACT_CACHE=ACT_CACHE||{}; const key=a.id+"|"+a.date+"|"+actEnd(a)+"|"+(a.skipQual?1:0); if(ACT_CACHE[key]) return ACT_CACHE[key];
+  const sch=settings.sched||DEFAULTS.sched, need=a.skipQual?0:2, qual=[], leaveQual=[], paid=[];
+  for(const ds of dateRange(a.date,actEnd(a))){ if(sch[pd(ds).getDay()]!=="work") continue;
+    if(qual.length<need){ if(isLeaveDay(ds)) leaveQual.push(ds); else qual.push(ds); } else paid.push(ds); }
+  /* acting rate for extra hours starts once the qualifying period is done */
+  const from=need===0?a.date:(qual.length>=need?addDaysStr(qual[need-1],1):null);
+  return ACT_CACHE[key]={qual,leaveQual,paid,from};
+}
+/* Overtime, callbacks, court and on call in a paid acting period use the acting rate (31.03, 31.04). */
+function actingRateFor(e){
+  if(!e||!e.date||e.type==="claim"||e.type==="vac"||e.type==="acting"||e.type==="ltouse"||e.type==="actline") return 0;
+  for(const a of actEntries()){ const D=actDays(a); if(D.from&&e.date>=D.from&&e.date<=(a.endDate||"9999-12-31")){ const r=actHr(a); return r>(Number(e.rate)||0)?r:0; } }
+  return 0;
+}
+/* Acting pay by pay period: each is one line to confirm against the "Acting pay" line on your stub. */
+function actLines(){
+  const out=[], sh=shiftHrs();
+  for(const a of actEntries()){ const D=actDays(a), g={};
+    for(const ds of D.paid){ const pp=payPeriod(ds,settings.payStart); (g[pp.start]=g[pp.start]||{pp,days:[]}).days.push(ds); }
+    for(const [k,v] of Object.entries(g)){ const c=(a.pp||{})[k]||{}, hrs=v.days.length*sh, amt=Math.round(hrs*actDiff(a)*100)/100;
+      out.push({id:a.id+"|"+k,type:"actline",comp:"cash",act:a,ppStart:k,ppEnd:v.pp.end,date:v.pp.end,created:0,days:v.days,leaveDays:v.days.filter(isLeaveDay),hrs,amt,
+        confirmed:!!c.stubDate,stubDate:c.stubDate||null,paid:c.paid!=null?c.paid:null}); } }
+  return out.sort((x,y)=>x.ppStart.localeCompare(y.ppStart));
+}
+const actAmt=l=>l.confirmed&&l.paid!=null?l.paid:l.amt;
+const actWaiting=()=>actLines().filter(l=>!l.confirmed&&l.ppStart<=today());
+function actLineEl(l){
+  const a=l.act, li=document.createElement("li"); li.className="entry actrow"+(l.confirmed?" done":"");
+  const chk=document.createElement("label"); chk.className="chk"; const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=l.confirmed;
+  cb.setAttribute("aria-label",(l.confirmed?"Unmark ":"Confirm ")+"acting pay for pay period "+ppNo(l.ppStart)); cb.onchange=()=>{ cb.checked=!cb.checked; openActConf(l); }; chk.append(cb,document.createElement("span"));
+  const main=document.createElement("div"); main.className="e-main";
+  const t=document.createElement("div"); t.className="e-top"; t.textContent="PP "+ppNo(l.ppStart)+" · Acting "+(a.rank||"");
+  const tg=document.createElement("span"); tg.className="tag actt"; tg.textContent="+"+money(actDiff(a))+"/hr"; t.append(tg);
+  const m=document.createElement("div"); m.className="e-meta"; m.textContent=shortD(l.ppStart)+" – "+shortD(l.ppEnd);
+  const m2=document.createElement("div"); m2.className="e-meta";
+  if(l.confirmed){ const ok=document.createElement("span"); ok.className="okt"; ok.textContent="On stub "+nice(l.stubDate); m2.append(ok);
+    if(l.paid!=null&&Math.abs(l.paid-l.amt)>=0.01){ const d=document.createElement("span"); d.className="diff"; d.textContent=" · stub "+money(l.paid)+" vs "+money(l.amt)+" expected"; m2.append(d); } }
+  else m2.textContent=l.ppStart>today()?"Upcoming":(l.days[l.days.length-1]>today()?"Under way":"Waiting for pay stub");
+  main.append(t,m,m2);
+  const r=document.createElement("div"); r.className="e-right"; const amt=document.createElement("div"); amt.className="e-amt"; amt.textContent=money(actAmt(l)); r.append(amt);
+  { const n=netInfo(l); if(n){ const nl=document.createElement("div"); nl.className="netl"; nl.textContent="≈ "+money(n.net)+" net"; r.append(nl); } }
+  li.append(chk,main,r);
+  const mb=document.createElement("div"); mb.className="mathbox isact";
+  for(const ln of [l.days.length+" scheduled day"+(l.days.length===1?"":"s")+" × "+hrs(shiftHrs())+" hrs = "+hrs(l.hrs)+" hrs"+(l.leaveDays.length?" (incl. "+l.leaveDays.length+" on leave, 31.03)":""),
+                   hrs(l.hrs)+" hrs × "+m3(actDiff(a))+" ("+m3(actHr(a))+" acting − "+m3(actBase(a))+") = "+money(l.amt)]){
+    const d=document.createElement("div"); d.className="ocmath"; d.textContent=ln; mb.append(d); }
+  li.append(mb); return li;
+}
+let actConfLine=null;
+function openActConf(l){
+  actConfLine=l; const on=!l.confirmed;
+  $("actConfTitle").textContent=on?"Confirm acting pay?":"Move back to waiting?";
+  $("actConfWhat").textContent="PP "+ppNo(l.ppStart)+" · "+shortD(l.ppStart)+" – "+shortD(l.ppEnd)+" · "+money(l.amt);
+  $("actConfMsg").textContent=on?"Check the Acting pay line on your pay stub. Add the stub date and, if you like, the amount it paid.":"This removes the confirmation and the stub date and amount saved with it.";
+  $("actConfFields").hidden=!on; $("actConfStub").value=l.stubDate||today(); $("actConfPaid").value=l.paid!=null?fmtMoney(l.paid):""; $("actConfPaid").placeholder=String(l.amt.toFixed(2));
+  $("actConfYes").textContent=on?"Confirm":"Move back to waiting";
+  const d=$("actConfDlg"); try{d.showModal();}catch(x){d.setAttribute("open","");}
+}
+const closeActConf=()=>{const d=$("actConfDlg"); if(d.open) d.close();};
+$("actConfClose").onclick=closeActConf; $("actConfCancel").onclick=closeActConf;
+$("actConfYes").onclick=async()=>{
+  const l=actConfLine; if(!l) return; const a=entries[l.act.id]; if(!a) return closeActConf();
+  const old=a, pp={...(a.pp||{})};
+  if(l.confirmed) delete pp[l.ppStart];
+  else { const pv=$("actConfPaid").value.replace(/[^0-9.]/g,""); pp[l.ppStart]={stubDate:$("actConfStub").value||today(),paid:pv!==""?Math.round(Number(pv)*100)/100:null}; }
+  const u={...a,pp}; entries[u.id]=u; closeActConf(); render();
+  try{ await store.save(u); flash(l.confirmed?"Moved back to waiting":"Acting pay confirmed"); }catch(x){ entries[u.id]=old; render(); flash("Couldn't save. Try again.",true); }
+};
+/* ---- acting period pop-up ---- */
+let actEditId=null;
+ACT_RANKS.forEach(([n])=>$("actRank").add(new Option(n,n))); $("actRank").add(new Option("Other (enter the rate)","other"));
+function actPreview(){
+  const a={id:actEditId||"_d",date:$("actFrom").value,endDate:$("actTo").value||null,annual:Number($("actAnnual").value)||0,baseAnnual:actEditId&&entries[actEditId]?actBaseAnnual(entries[actEditId]):Number(settings.salary??DEFAULTS.salary),skipQual:$("actSkipQual").checked};
+  const P=$("actPrev"); if(!a.date||!a.annual){ P.textContent="Pick the first day and the rank."; return; }
+  ACT_CACHE=null; const D=actDays(a), diff=actDiff(a), sh=shiftHrs();
+  const lines=["Acting rate "+money(actHr(a))+"/hr, "+money(diff)+"/hr more than your "+money(actBase(a))+"."];
+  if(!a.skipQual) lines.push(D.qual.length<2?"Qualifying period (2 scheduled workdays, 31.06): "+(D.qual.map(nice).join(", ")||"none yet")+(D.qual.length<2?" (not finished)":""):"Qualifying days, no acting pay (31.06): "+D.qual.map(nice).join(", ")+".");
+  if(D.leaveQual.length) lines.push("Leave during qualifying doesn't count or pay (31.08): "+D.leaveQual.map(nice).join(", ")+".");
+  lines.push(D.paid.length+" paid day"+(D.paid.length===1?"":"s")+(a.endDate?"":" so far")+" × "+hrs(sh)+" hrs × "+m3(diff)+" = "+money(D.paid.length*sh*diff)+". Overtime from "+(D.from?nice(D.from):"after qualifying")+" uses the acting rate (31.04).");
+  P.textContent=lines.join(" ");
+}
+function openAct(a,ds){
+  actEditId=a?a.id:null; $("actErr").hidden=true;
+  const rk=a?(ACT_RANKS.some(([n])=>n===a.rank)?a.rank:"other"):"S/Sgt. step 1"; $("actRank").value=rk;
+  $("actAnnual").value=a?a.annual:(ACT_RANKS.find(([n])=>n===rk)||[0,146019])[1]; $("actAnnual").readOnly=rk!=="other";
+  $("actFrom").value=a?a.date:(ds||today()); $("actTo").value=a?(a.endDate||""):""; $("actSkipQual").checked=!!(a&&a.skipQual); $("actNote").value=a?(a.note||""):"";
+  $("actTitle").textContent=a?"Edit acting period":"Add acting period"; $("actSave").textContent=a?"Save changes":"Save"; $("actDel").hidden=!a; delete $("actDel").dataset.armed; $("actDel").textContent="Delete";
+  actPreview(); const d=$("actDlg"); try{d.showModal();}catch(x){d.setAttribute("open","");}
+}
+const closeAct=()=>{const d=$("actDlg"); if(d.open) d.close(); actEditId=null; ACT_CACHE=null;};
+$("actClose").onclick=closeAct; $("actCancel").onclick=closeAct;
+$("actRank").addEventListener("change",()=>{ const r=$("actRank").value, f=ACT_RANKS.find(([n])=>n===r); $("actAnnual").readOnly=r!=="other"; if(f) $("actAnnual").value=f[1]; else $("actAnnual").focus(); actPreview(); });
+for(const id of ["actAnnual","actFrom","actTo","actSkipQual"]) $(id).addEventListener(id==="actAnnual"?"input":"change",actPreview);
+$("actAdd").onclick=()=>openAct(null);
+$("actSave").onclick=async()=>{
+  const err=$("actErr"), bad=m=>{err.textContent=m;err.hidden=false;};
+  const from=$("actFrom").value, to=$("actTo").value||null, annual=Math.round(Number($("actAnnual").value)||0);
+  if(!from) return bad("Pick the first day you acted.");
+  if(to&&to<from) return bad("The last day is before the first day.");
+  if(!(annual>0)) return bad("Enter the acting rank's annual rate.");
+  const clash=actEntries().find(x=>x.id!==actEditId&&from<=(x.endDate||"9999-12-31")&&(to||"9999-12-31")>=x.date);
+  if(clash) return bad("That overlaps another acting period ("+nice(clash.date)+(clash.endDate?" – "+nice(clash.endDate):", still acting")+"). Edit that one instead.");
+  err.hidden=true; const old=actEditId?entries[actEditId]:null;
+  const r=$("actRank").value, u={...(old||{}),id:old?old.id:"a"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:"acting",date:from,endDate:to,
+    rank:r==="other"?"Higher rank":r,annual,baseAnnual:old?actBaseAnnual(old):Number(settings.salary??DEFAULTS.salary),skipQual:$("actSkipQual").checked,note:$("actNote").value.trim(),pp:old?(old.pp||{}):{},created:old?old.created:Date.now()};
+  entries[u.id]=u; closeAct(); ACT_CACHE=null; render();
+  try{ await store.save(u); flash(old?"Acting period updated":"Acting period saved"); }catch(x){ if(old) entries[u.id]=old; else delete entries[u.id]; ACT_CACHE=null; render(); flash("Couldn't save. Try again.",true); }
+};
+$("actDel").onclick=async()=>{ const b=$("actDel"); if(!b.dataset.armed){ b.dataset.armed="1"; b.textContent="Sure? Confirmations go too"; return; }
+  const e=entries[actEditId]; if(!e) return closeAct(); delete entries[e.id]; closeAct(); render();
+  try{ await store.remove(e.id); flash("Acting period deleted"); }catch(x){ entries[e.id]=e; render(); flash("Couldn't delete. Try again.",true); } };
+function renderAct(){
+  const L=$("actList"); L.textContent=""; const all=actLines(), w=all.filter(l=>!l.confirmed&&l.ppStart<=today());
+  $("actSum").textContent=w.length?money(w.reduce((q,l)=>q+l.amt,0))+" waiting":"";
+  const list=actEntries().sort((a,b)=>b.date.localeCompare(a.date));
+  if(!list.length){ const em=document.createElement("p"); em.className="hint"; em.textContent="No acting periods yet."; L.append(em); return; }
+  for(const a of list){ const D=actDays(a), sh=shiftHrs(), ls=all.filter(l=>l.act.id===a.id);
+    const r=document.createElement("div"); r.className="actper";
+    const h=document.createElement("div"); h.className="vtxt"; const st=document.createElement("strong"); st.textContent="Acting "+a.rank+" · "+nice(a.date)+" – "+(a.endDate?nice(a.endDate):"still acting");
+    const s1=document.createElement("small"); s1.textContent=money(actHr(a))+"/hr (+"+money(actDiff(a))+"/hr) · "+(a.skipQual?"qualifying already done":"qualifying: "+(D.qual.map(nice).join(", ")||"not yet")+(D.qual.length<2&&!a.skipQual?" (not finished)":""));
+    const s2=document.createElement("small"); s2.textContent=D.paid.length+" paid day"+(D.paid.length===1?"":"s")+" = "+hrs(D.paid.length*sh)+" hrs × "+m3(actDiff(a))+" = "+money(ls.reduce((q,l)=>q+l.amt,0))+" · "+ls.filter(l=>l.confirmed).length+" of "+ls.length+" pay period"+(ls.length===1?"":"s")+" confirmed";
+    h.append(st,s1,s2); if(a.note){const n=document.createElement("small"); n.textContent=a.note; h.append(n);}
+    const ed=document.createElement("button"); ed.type="button"; ed.textContent="Edit"; ed.onclick=()=>openAct(a);
+    r.append(h,ed); L.append(r); }
+}
+
 /* ---------- backup & restore ---------- */
 const BK_KEY="ot-last-backup";
 function lastBackup(){ try{return localStorage.getItem(BK_KEY);}catch(x){return null;} }
