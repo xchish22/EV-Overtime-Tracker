@@ -716,6 +716,10 @@ details.settings[open]>summary::after{content:"－"}
   <details class="card settings">
     <summary>Settings</summary>
     <form class="setgrid" id="setForm" novalidate>
+      <div class="field full taxset"><span class="label">Your rank and pay (collective agreement, Appendix A)</span>
+        <div class="field"><label for="sRank">Rank and step</label><select id="sRank"></select></div>
+        <p class="hint" id="rankHint"></p>
+      </div>
       <div class="field full"><span class="label">Your schedule (tap a day to change it)</span>
         <div class="sched" id="sched"></div>
         <p class="hint">Work = scheduled shift (extra hours 1.5×). TOW = time off work from your compressed plan (1.5×). RTO = regular time off (2×). Set to your 4/10: Mon–Thu work, Fri TOW, Sat–Sun RTO.</p></div>
@@ -762,7 +766,7 @@ details.settings[open]>summary::after{content:"－"}
       </div>
       <div class="field"><label for="sRate">Hourly rate</label><input type="number" id="sRate" inputmode="decimal" min="0" step="0.01"></div>
       <div class="field"><label for="sCur">Currency symbol</label><input type="text" id="sCur" maxlength="3"></div>
-      <p class="hint">Your hourly rate is your annual salary ÷ 2,087.04. Pay is worked out with the exact rate ($137,677 ÷ 2,087.04 = $65.967590…) and only the dollar amount is rounded, the same way your pay stub does it. Your stub shows $5,277.41 for 80 hours, which matches Sgt. Step 2 ($137,677), so $65.97 an hour. Change this when you get a raise. Entries you already logged keep the rate they were saved with.</p>
+      <p class="hint" id="rateHint">Your hourly rate is your annual salary ÷ 2,087.04. Pay is worked out with the exact rate and only the dollar amount is rounded, the same way your pay stub does it. Picking your rank above fills in your salary and hourly rate. Entries you already logged keep the rate they were saved with.</p>
       <div class="field full"><button type="submit" class="btn-primary">Save settings</button></div>
     </form>
   </details>
@@ -854,7 +858,11 @@ details.settings[open]>summary::after{content:"－"}
 
 <script>
 /* ===== CALC START ===== */
-const DEFAULTS={ocDefault:{sDay:5,sTime:"14:00",eDay:1,eTime:"06:00"},claims:{b:29.95,l:30.55,d:62.70,inc:25.00,km:0.63,priv:50.00,asOf:"2026-10-01"},ppOffset:0,rate:65.97,currency:"$",salary:137677,taxBase:120858,payCpp:true,payEi:true,sched:["rto","work","work","work","work","tow","rto"],payStart:"2026-10-29",shift:{start:"06:30",end:"16:30"}};
+/* Appendix A annual rates of pay, RCMP Regular Members, effective April 1, 2024 (market adjustment, row V). Hourly = annual ÷ 2,087.04. */
+const RANKS_ASOF="April 1, 2024 (market adjustment)";
+const RANKS=[["Cst. step 1",71191],["Cst. step 2",92497],["Cst. step 3",100356],["Cst. step 4",108220],["Cst. step 5",115350],
+  ["Cpl. step 1",121691],["Cpl. step 2",126311],["Sgt. step 1",133677],["Sgt. step 2",137677],["S/Sgt. step 1",146019],["S/Sgt. step 2",150073],["S/S/M., S/M, C/S/M",150524]];
+const DEFAULTS={rank:"Sgt. step 2",ocDefault:{sDay:5,sTime:"14:00",eDay:1,eTime:"06:00"},claims:{b:29.95,l:30.55,d:62.70,inc:25.00,km:0.63,priv:50.00,asOf:"2026-10-01"},ppOffset:0,rate:65.97,currency:"$",salary:137677,taxBase:120858,payCpp:true,payEi:true,sched:["rto","work","work","work","work","tow","rto"],payStart:"2026-10-29",shift:{start:"06:30",end:"16:30"}};
 const mins=t=>{const [h,m]=t.split(":").map(Number);return h*60+m;};
 const dowOf=d=>{const [y,m,dd]=d.split("-").map(Number);return new Date(y,m-1,dd).getDay();};
 const clock=t=>{let [h,m]=t.split(":").map(Number);const ap=h<12?"am":"pm";h=h%12||12;return h+":"+String(m).padStart(2,"0")+ap;};
@@ -1071,18 +1079,19 @@ function deductions(gross,base,ytd,opt){
 /* ===== CALC END ===== */
 
 /* ---------- versioning (semantic: MAJOR.MINOR.PATCH) ---------- */
-const APP_VERSION="2.22.1";
+const APP_VERSION="2.23.0";
 const DATA_SCHEMA=2;   /* bump only on a MAJOR release that changes how entries or settings are stored */
 const CHANGELOG=[   /* recent releases only */
+  {v:"2.23.0",date:"2026-11-21",kind:"minor",notes:[
+    "Settings has a Rank and step list (Appendix A pay table). Picking your rank fills in your salary and exact hourly rate, so pay works out right for whoever uses the app.",
+    "Acting periods default to the rank above yours."]},
   {v:"2.22.1",date:"2026-11-21",kind:"patch",notes:[
     "Pay is worked out with the exact hourly rate (salary ÷ 2,087.04 = $65.967590…), not $65.97, and only the dollar amount is rounded, matching your pay stub (8 hrs OA = $527.74)."]},
   {v:"2.22.0",date:"2026-11-21",kind:"minor",notes:[
     "Stat holidays (Article 23, with BC Day) are on the calendar. Work on a stat is 1.5× for every hour (23.08), a stat on your RTO moves to your next workday (23.06), and vacation over a stat only uses the hours above 8.",
     "On call only counts hours you're off duty: your scheduled shift is taken out (22.10), except on stats and leave days.",
     "On call that crosses the start or end of an acting period is split: only the hours inside it get the acting rate.",
-    "Callbacks warn you if another one started within the minimum period (26.03), and the recalled-from-leave box says it's the 1st or 2nd day only (25.04(b), 26.07)."]},
-  {v:"2.21.1",date:"2026-11-21",kind:"patch",notes:[
-    "Fixed acting pay: once you've acted 2 scheduled workdays, acting pay counts from your first acting day (31.01), so the qualifying days are paid too. Overtime in the period uses the acting rate from day 1."]}
+    "Callbacks warn you if another one started within the minimum period (26.03), and the recalled-from-leave box says it's the 1st or 2nd day only (25.04(b), 26.07)."]}
 ];
 /* Upgrade saved data from older schemas. Each step only adds missing fields, so nothing is lost. */
 function migrateSettings(st){
@@ -1880,10 +1889,25 @@ function payHint(){const v=$("sPayStart").value||DEFAULTS.payStart, c=payPeriod(
   $("payHint").textContent="Pay periods repeat every 14 days. Current: PP "+n+", "+shortD(c.start)+" – "+shortD(c.end)+". Next: PP "+(ppNumber(nx.start,v,Number($("sPpNum").value)-ppNumber(today(),v,0)||0))+", "+shortD(nx.start)+" – "+shortD(nx.end)+". PP 1 is the first pay period ending in January.";}
 $("sPayStart").addEventListener("change",payHint); $("sPpNum").addEventListener("input",payHint);
 for(const id of ["sOcSDay","sOcEDay"]) DAYNAME.forEach((n,i)=>$(id).add(new Option(n,String(i))));
-function fillSettings(){ setTimeout(()=>formatMoneyBoxes($("setForm")),0); { const W=ocDefaults(); $("sOcSDay").value=String(W.sDay); $("sOcSTime").value=W.sTime; $("sOcEDay").value=String(W.eDay); $("sOcETime").value=W.eTime; } { const c=claimRates(); $("sClB").value=c.b; $("sClL").value=c.l; $("sClD").value=c.d; $("sClInc").value=c.inc; $("sClKm").value=c.km; $("sClPriv").value=c.priv; $("sClAsOf").value=c.asOf; }const sh=settings.shift||DEFAULTS.shift;$("sShiftStart").value=sh.start;$("sShiftEnd").value=sh.end;$("sRate").value=settings.rate;$("sLtoOt").value=(settings.ltoStart||{}).ot||0;$("sLtoOc").value=(settings.ltoStart||{}).oc||0;$("sLtoAsOf").value=settings.ltoAsOf||today();$("sSalary").value=settings.salary??DEFAULTS.salary;$("sTaxBase").value=settings.taxBase??DEFAULTS.taxBase;$("sCpp").checked=settings.payCpp??DEFAULTS.payCpp;$("sEi").checked=settings.payEi??DEFAULTS.payEi;$("sCur").value=settings.currency;$("sPayStart").value=settings.payStart||DEFAULTS.payStart;$("sPpNum").value=ppNo(today());payHint();schedDraft=[...(settings.sched||DEFAULTS.sched)];renderSched();}
+/* ---- rank & pay ---- */
+RANKS.forEach(([n,a])=>$("sRank").add(new Option(n+" · $"+a.toLocaleString("en-CA"),n))); $("sRank").add(new Option("Other (enter your salary)","other"));
+const rankOf=sal=>{const f=RANKS.find(([,a])=>a===Number(sal)); return f?f[0]:"other";};
+function applyRank(fromUser){
+  const r=$("sRank").value, f=RANKS.find(([n])=>n===r), lock=!!f;
+  $("sSalary").readOnly=lock; $("sRate").readOnly=lock;
+  if(f){ const old=Number($("sSalary").value)||0, nw=f[1];
+    if(fromUser&&old>0&&old!==nw){ const tb=Number($("sTaxBase").value)||0; if(tb>0) $("sTaxBase").value=Math.round(tb*nw/old); }   /* pension comes off in proportion to salary */
+    $("sSalary").value=nw; $("sRate").value=(nw/2087.04).toFixed(2);
+    $("rankHint").textContent="$"+nw.toLocaleString("en-CA")+" a year ÷ 2,087.04 = $"+(nw/2087.04).toFixed(2)+"/hr (exact $"+(nw/2087.04).toFixed(6)+"). Rates are Appendix A, effective "+RANKS_ASOF+"; when a new agreement changes them, pick Other and enter your salary."+(fromUser?" Taxable income was adjusted in proportion; check it against your stub.":""); }
+  else $("rankHint").textContent="Enter your annual salary and hourly rate (salary ÷ 2,087.04) below.";
+  formatMoneyBoxes($("setForm"));
+}
+$("sRank").addEventListener("change",()=>applyRank(true));
+$("sSalary").addEventListener("input",()=>{ if($("sRank").value==="other"){ const v=Number($("sSalary").value)||0; if(v>0) $("sRate").value=(v/2087.04).toFixed(2); } });
+function fillSettings(){ setTimeout(()=>formatMoneyBoxes($("setForm")),0); { const W=ocDefaults(); $("sOcSDay").value=String(W.sDay); $("sOcSTime").value=W.sTime; $("sOcEDay").value=String(W.eDay); $("sOcETime").value=W.eTime; } { const c=claimRates(); $("sClB").value=c.b; $("sClL").value=c.l; $("sClD").value=c.d; $("sClInc").value=c.inc; $("sClKm").value=c.km; $("sClPriv").value=c.priv; $("sClAsOf").value=c.asOf; }const sh=settings.shift||DEFAULTS.shift;$("sShiftStart").value=sh.start;$("sShiftEnd").value=sh.end;$("sRate").value=settings.rate;$("sLtoOt").value=(settings.ltoStart||{}).ot||0;$("sLtoOc").value=(settings.ltoStart||{}).oc||0;$("sLtoAsOf").value=settings.ltoAsOf||today();$("sSalary").value=settings.salary??DEFAULTS.salary;$("sTaxBase").value=settings.taxBase??DEFAULTS.taxBase;$("sCpp").checked=settings.payCpp??DEFAULTS.payCpp;$("sEi").checked=settings.payEi??DEFAULTS.payEi;$("sCur").value=settings.currency;$("sRank").value=settings.rank&&(settings.rank==="other"||RANKS.some(([n])=>n===settings.rank))?settings.rank:rankOf(settings.salary??DEFAULTS.salary);setTimeout(()=>applyRank(false),0);$("sPayStart").value=settings.payStart||DEFAULTS.payStart;$("sPpNum").value=ppNo(today());payHint();schedDraft=[...(settings.sched||DEFAULTS.sched)];renderSched();}
 $("setForm").addEventListener("submit",async ev=>{
   ev.preventDefault();
-  settings={vacAllot:settings.vacAllot||{},vacStart:settings.vacStart||{},ocDefault:{sDay:Number($("sOcSDay").value),sTime:$("sOcSTime").value,eDay:Number($("sOcEDay").value),eTime:$("sOcETime").value},claims:{b:Number($("sClB").value)||0,l:Number($("sClL").value)||0,d:Number($("sClD").value)||0,inc:Number($("sClInc").value)||0,km:Number($("sClKm").value)||0,priv:Number($("sClPriv").value)||0,asOf:$("sClAsOf").value||DEFAULTS.claims.asOf},ltoStart:{ot:Math.max(0,Number($("sLtoOt").value)||0),oc:Math.max(0,Number($("sLtoOc").value)||0)},ltoAsOf:$("sLtoAsOf").value||today(),salary:Math.max(0,Number($("sSalary").value)||0),taxBase:Math.max(0,Number($("sTaxBase").value)||0),payCpp:$("sCpp").checked,payEi:$("sEi").checked,rate:Math.max(0,Number($("sRate").value)||0),currency:$("sCur").value||"$",sched:[...schedDraft],payStart:$("sPayStart").value||DEFAULTS.payStart,ppOffset:(Number($("sPpNum").value)||0)-ppNumber(today(),$("sPayStart").value||DEFAULTS.payStart,0),shift:{start:$("sShiftStart").value||DEFAULTS.shift.start,end:$("sShiftEnd").value||DEFAULTS.shift.end}}; render(); updatePreview();
+  settings={rank:$("sRank").value,vacAllot:settings.vacAllot||{},vacStart:settings.vacStart||{},ocDefault:{sDay:Number($("sOcSDay").value),sTime:$("sOcSTime").value,eDay:Number($("sOcEDay").value),eTime:$("sOcETime").value},claims:{b:Number($("sClB").value)||0,l:Number($("sClL").value)||0,d:Number($("sClD").value)||0,inc:Number($("sClInc").value)||0,km:Number($("sClKm").value)||0,priv:Number($("sClPriv").value)||0,asOf:$("sClAsOf").value||DEFAULTS.claims.asOf},ltoStart:{ot:Math.max(0,Number($("sLtoOt").value)||0),oc:Math.max(0,Number($("sLtoOc").value)||0)},ltoAsOf:$("sLtoAsOf").value||today(),salary:Math.max(0,Number($("sSalary").value)||0),taxBase:Math.max(0,Number($("sTaxBase").value)||0),payCpp:$("sCpp").checked,payEi:$("sEi").checked,rate:Math.max(0,Number($("sRate").value)||0),currency:$("sCur").value||"$",sched:[...schedDraft],payStart:$("sPayStart").value||DEFAULTS.payStart,ppOffset:(Number($("sPpNum").value)||0)-ppNumber(today(),$("sPayStart").value||DEFAULTS.payStart,0),shift:{start:$("sShiftStart").value||DEFAULTS.shift.start,end:$("sShiftEnd").value||DEFAULTS.shift.end}}; render(); updatePreview();
   try{await store.saveSettings(settings);flash("Settings saved");}catch(x){flash("Couldn't save settings. Try again.",true);}
 });
 
@@ -2256,7 +2280,7 @@ $("vacClear").onclick=async()=>{ const o={...(settings.vacStart||{})}; delete o[
   $("vacStartHint").textContent="Cleared. The year starts at "+hrs(vacAllot(vacFy))+" hrs again."; await saveVacSettings("Vacation balance cleared"); };
 /* ---------- acting pay (Article 31) ---------- */
 /* Appendix A annual rates, April 1, 2024 market adjustment. */
-const ACT_RANKS=[["Cpl. step 1",121691],["Cpl. step 2",126311],["Sgt. step 1",133677],["Sgt. step 2",137677],["S/Sgt. step 1",146019],["S/Sgt. step 2",150073],["S/S/M., S/M, C/S/M",150524]];
+const ACT_RANKS=RANKS.filter(([n])=>!n.startsWith("Cst."));
 const actEntries=()=>Object.values(entries).filter(e=>e.type==="acting");
 /* Hourly rates are annual ÷ 2,087.04. The difference is worked from the two annual rates so it isn't thrown off by rounding (S/Sgt. 1 vs Sgt. 2: $3.997/hr). */
 const actHr=a=>(Number(a.annual)||0)/2087.04;
@@ -2368,9 +2392,13 @@ function actPreview(){
   lines.push(D.paid.length+" paid day"+(D.paid.length===1?"":"s")+(a.endDate?"":" so far")+" × "+hrs(sh)+" hrs × "+m3(diff)+" = "+money(D.paid.length*sh*diff)+"."+(D.ok?" Overtime from "+nice(D.from)+" uses the acting rate (31.04).":""));
   P.textContent=lines.join(" ");
 }
+/* Default acting rank: step 1 of the rank above yours (Cst. → Cpl., Cpl. → Sgt., Sgt. → S/Sgt., S/Sgt. → S/S/M.). */
+function nextRank(){ const me=settings.rank&&settings.rank!=="other"?settings.rank:rankOf(settings.salary??DEFAULTS.salary), sal=Number(settings.salary??DEFAULTS.salary);
+  const up={"Cst.":"Cpl. step 1","Cpl.":"Sgt. step 1","Sgt.":"S/Sgt. step 1","S/Sgt.":"S/S/M., S/M, C/S/M"}[(me.split(" ")[0])];
+  return up||((ACT_RANKS.find(([,a])=>a>sal)||ACT_RANKS[ACT_RANKS.length-1])[0]); }
 function openAct(a,ds){
   actEditId=a?a.id:null; $("actErr").hidden=true;
-  const rk=a?(ACT_RANKS.some(([n])=>n===a.rank)?a.rank:"other"):"S/Sgt. step 1"; $("actRank").value=rk;
+  const rk=a?(ACT_RANKS.some(([n])=>n===a.rank)?a.rank:"other"):nextRank(); $("actRank").value=rk;
   $("actAnnual").value=a?a.annual:(ACT_RANKS.find(([n])=>n===rk)||[0,146019])[1]; $("actAnnual").readOnly=rk!=="other";
   $("actFrom").value=a?a.date:(ds||today()); $("actTo").value=a?(a.endDate||""):""; $("actSkipQual").checked=!!(a&&a.skipQual); $("actNote").value=a?(a.note||""):"";
   $("actTitle").textContent=a?"Edit acting period":"Add acting period"; $("actSave").textContent=a?"Save changes":"Save"; $("actDel").hidden=!a; delete $("actDel").dataset.armed; $("actDel").textContent="Delete";
